@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>PokemonGO萬能展示圖生成器</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  body {margin:0; padding:0 0 280px; background:#1a0033; font-family:-apple-system,system-ui,sans-serif; color:#fff;}
+  h1 {text-align:center; padding:20px 0 10px; font-size:26px;}
+  .desc {text-align:center; margin:20px auto; padding:0 15px; max-width:800px;}
+
+  label[for=picker] {
+    display:block; width:90%; max-width:500px; margin:20px auto;
+    padding:40px; text-align:center; font-size:30px; font-weight:bold;
+    background:linear-gradient(135deg,#cf9eff,#7b4dff); color:#000;
+    border-radius:40px; box-shadow:0 15px 40px rgba(123,77,255,0.6);
+    cursor:pointer;
+  }
+  #picker {display:none;}
+
+  #preview {
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:30px;
+    padding:20px 15px 100px;
+    max-width:1600px;
+    margin:0 auto;
+  }
+  .thumb {
+    aspect-ratio: 0.466;
+    border-radius:36px;
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,0.8);
+    transition:all .2s;
+  }
+  .thumb img {width:100%; height:100%; object-fit:cover;}
+
+  .controls {
+    position:fixed; left:0; right:0; bottom:0; padding:20px;
+    background:rgba(26,0,51,0.98); backdrop-filter:blur(20px);
+    border-top:1px solid rgba(255,255,255,0.1);
+    text-align:center; z-index:1000;
+  }
+  .controls select, .controls input, button {
+    padding:12px 20px; margin:6px 4px; border-radius:40px; border:none; font-size:17px;
+  }
+  .controls select, .controls input {background:#333; color:#fff; width:80px;}
+  .controls button {background:#bb86fc; color:#000; font-weight:bold;}
+  .slider {margin:12px 16px; font-size:16px;}
+  input[type=range] {width:150px;}
+
+  canvas {display:block; max-width:100%; margin:40px auto; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.6);}
+</style>
+</head>
+<body>
+
+<h1>PokemonGO萬能展示圖生成器 By金昇工作室</h1>
+<p class="desc">支援 1×1 到 10×10 任意格數｜透明背景一鍵下載</p>
+
+<label for="picker">點擊上傳寶可夢截圖<br><small style="font-size:20px;">可一次選很多張</small></label>
+<input type="file" id="picker" multiple accept="image/*">
+
+<div id="preview"></div>
+
+<div class="controls">
+  <div style="margin:10px 0;">
+    <span style="font-size:18px;">排列方式：</span><br>
+    <select id="preset">
+      <option value="auto">自動排列</option>
+      <option value="3x2">3×2（6隻橫向）</option>
+      <option value="2x3">2×3（6隻直向）</option>
+      <option value="3x3">3×3（9隻）</option>
+      <option value="4x4">4×4（16隻）</option>
+      <option value="5x5">5×5（25隻）</option>
+      <option value="6x6">6×6（36隻）</option>
+      <option value="custom">自訂格數 →</option>
+    </select>
+    <input type="number" id="cols" min="1" max="10" value="3" style="display:none;">
+    <span id="x" style="display:none;">×</span>
+    <input type="number" id="rows" min="1" max="10" value="2" style="display:none;">
+  </div>
+
+  <div>
+    <span class="slider">間距 <input type="range" id="gap" min="0" max="120" value="40"><b id="g">40px</b></span>
+    <span class="slider">圓角 <input type="range" id="radius" min="0" max="100" value="36"><b id="r">36px</b></span>
+    <span class="slider">陰影 <input type="range" id="shadow" min="0" max="80" value="40"><b id="s">40px</b></span>
+  </div>
+
+  <br><br>
+  <button id="clear">清空全部</button>
+  <button id="download" disabled>生成透明背景大圖</button>
+  <div style="margin-top:10px; font-size:14px; opacity:0.8;" id="info"></div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const picker   = document.getElementById('picker');
+const preview  = document.getElementById('preview');
+const canvas   = document.getElementById('canvas');
+const ctx      = canvas.getContext('2d');
+let images = [];
+
+const preset   = document.getElementById('preset');
+const colsIn   = document.getElementById('cols');
+const rowsIn   = document.getElementById('rows');
+const xSpan    = document.getElementById('x');
+
+// —— 預設選單切換 ——
+preset.onchange = () => {
+  if (preset.value === 'custom') {
+    colsIn.style.display = rowsIn.style.display = xSpan.style.display = 'inline-block';
+  } else {
+    colsIn.style.display = rowsIn.style.display = xSpan.style.display = 'none';
+    if (preset.value !== 'auto') {
+      const [c, r] = preset.value.split('x');
+      colsIn.value = c; rowsIn.value = r;
+    }
+  }
+  updateLayout();
+};
+
+// —— 取得目前要用的格數 ——
+function getGrid() {
+  if (preset.value === 'auto') {
+    const n = images.length;
+    if (n <= 6)  return {cols:3, rows:2};
+    if (n <= 12) return {cols:4, rows:3};
+    const s = Math.ceil(Math.sqrt(n));
+    return {cols:s, rows:s};
+  }
+  const c = Math.max(1, Math.min(10, parseInt(colsIn.value) || 3));
+  const r = Math.max(1, Math.min(10, parseInt(rowsIn.value) || 2));
+  return {cols:c, rows:r};
+}
+
+// —— 上傳圖片 ——
+picker.onchange = e => {
+  [...e.target.files].forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+      const img = new Image();
+      img.onload = () => {
+        images.push(img);
+        const div = document.createElement('div');
+        div.className="thumb";
+        div.innerHTML = `<img src="${img.src}">`;
+        preview.appendChild(div);
+        updateLayout();               // ← 這一行一定要在加完圖後呼叫！
+      };
+      img.src = URL.createObjectURL(file);
+  });
+};
+
+// —— 更新預覽與資訊 ——
+function updateLayout() {
+  const {cols} = getGrid();
+  preview.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  preview.style.gap = gapSlider.value + 'px';
+
+  document.querySelectorAll('.thumb').forEach(t => {
+    t.style.borderRadius = radiusSlider.value + 'px';
+    t.style.boxShadow = `0 ${shadowSlider.value}px ${shadowSlider.value*3}px rgba(0,0,0,0.8)`;
+  });
+
+  document.getElementById('g').textContent = gapSlider.value + 'px';
+  document.getElementById('r').textContent = radiusSlider.value + 'px';
+  document.getElementById('s').textContent = shadowSlider.value + 'px';
+
+  const {cols:gc, rows:gr} = getGrid();
+  const total = gc * gr;
+  document.getElementById('info').textContent = 
+    `即將生成 ${gc}×${gr} = ${total} 格（使用前 ${Math.min(images.length, total)} 張）`;
+
+  document.getElementById('download').disabled = images.length === 0;
+}
+
+const gapSlider    = document.getElementById('gap');
+const radiusSlider = document.getElementById('radius');
+const shadowSlider = document.getElementById('shadow');
+
+gapSlider.oninput = radiusSlider.oninput = shadowSlider.oninput = updateLayout;
+colsIn.oninput = rowsIn.oninput = updateLayout;
+
+document.getElementById('clear').onclick = () => {
+  images = [];
+  preview.innerHTML = '';
+  updateLayout();
+};
+
+// —— 點擊「生成」——
+document.getElementById('download').onclick = () => {
+  const gap    = +gapSlider.value;
+  const radius = +radiusSlider.value;
+  const shadow = +shadowSlider.value;
+  const {cols, rows} = getGrid();
+  const totalCells = cols * rows;
+
+  const W = 460;
+  const H = 1020;
+
+  canvas.width  = cols * W + (cols + 1) * gap;
+  canvas.height = rows * H + (rows + 1) * gap;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // 透明底
+
+  images.slice(0, totalCells).forEach((img, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = gap + col * (W + gap);
+    const y = gap + row * (H + gap);
+
+    ctx.save();
+
+    ctx.shadowColor   = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur    = shadow * 2;
+    ctx.shadowOffsetY = shadow;
+
+    // 圓角剪裁
+    const r = radius;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + W, y,       x + W, y + H, r);
+    ctx.arcTo(x + W, y + H,   x,     y + H, r);
+    ctx.arcTo(x,     y + H,   x,     y,     r);
+    ctx.arcTo(x,     y,       x + W, y,     r);
+    ctx.closePath();
+    ctx.clip();
+
+    // 圖片置中
+    const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+    const dw = img.naturalWidth * scale;
+    const dh = img.naturalHeight * scale;
+    ctx.drawImage(img, x + (W - dw)/2, y + (H - dh)/2, dw, dh);
+
+    ctx.restore();
+  });
+
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `PokemonGO_${cols}x${rows}_透明_${new Date().toISOString().slice(0,10)}.png`;
+    a.click();
+  }, 'image/png');
+};
+
+// 頁面載入完立刻初始化一次
+updateLayout();
+</script>
+</body>
+</html>
