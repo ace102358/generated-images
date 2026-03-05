@@ -2,13 +2,12 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>PokemonGO萬能展示圖生成器</title>
+<title>帳號圖產生器（支援時間排序）</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   body {margin:0; padding:0 0 280px; background:#1a0033; font-family:-apple-system,system-ui,sans-serif; color:#fff;}
   h1 {text-align:center; padding:20px 0 10px; font-size:26px;}
   .desc {text-align:center; margin:20px auto; padding:0 15px; max-width:800px;}
-
   label[for=picker] {
     display:block; width:90%; max-width:500px; margin:20px auto;
     padding:40px; text-align:center; font-size:30px; font-weight:bold;
@@ -17,7 +16,6 @@
     cursor:pointer;
   }
   #picker {display:none;}
-
   #preview {
     display:grid;
     grid-template-columns: repeat(3, 1fr);
@@ -34,7 +32,6 @@
     transition:all .2s;
   }
   .thumb img {width:100%; height:100%; object-fit:cover;}
-
   .controls {
     position:fixed; left:0; right:0; bottom:0; padding:20px;
     background:rgba(26,0,51,0.98); backdrop-filter:blur(20px);
@@ -48,20 +45,15 @@
   .controls button {background:#bb86fc; color:#000; font-weight:bold;}
   .slider {margin:12px 16px; font-size:16px;}
   input[type=range] {width:150px;}
-
   canvas {display:block; max-width:100%; margin:40px auto; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.6);}
 </style>
 </head>
 <body>
-
-<h1>PokemonGO萬能展示圖生成器 By金昇工作室</h1>
-<p class="desc">支援 1×1 到 10×10 任意格數｜透明背景一鍵下載</p>
-
+<h1>PokemonGO萬能展示圖生成器（支援時間排序）By金昇工作室</h1>
+<p class="desc">支援 1×1 到 10×10 任意格數｜透明背景一鍵下載｜新增時間排序功能</p>
 <label for="picker">點擊上傳寶可夢截圖<br><small style="font-size:20px;">可一次選很多張</small></label>
 <input type="file" id="picker" multiple accept="image/*">
-
 <div id="preview"></div>
-
 <div class="controls">
   <div style="margin:10px 0;">
     <span style="font-size:18px;">排列方式：</span><br>
@@ -79,32 +71,41 @@
     <span id="x" style="display:none;">×</span>
     <input type="number" id="rows" min="1" max="10" value="2" style="display:none;">
   </div>
+  
+  <!-- 新增：排序方式 -->
+  <div style="margin:10px 0;">
+    <span style="font-size:18px;">排序方式：</span><br>
+    <select id="sortMode">
+      <option value="upload">上傳順序</option>
+      <option value="old-new" selected>時間順序（舊→新）</option>
+      <option value="new-old">時間順序（新→舊）</option>
+    </select>
+  </div>
 
   <div>
     <span class="slider">間距 <input type="range" id="gap" min="0" max="120" value="40"><b id="g">40px</b></span>
     <span class="slider">圓角 <input type="range" id="radius" min="0" max="100" value="36"><b id="r">36px</b></span>
     <span class="slider">陰影 <input type="range" id="shadow" min="0" max="80" value="40"><b id="s">40px</b></span>
   </div>
-
   <br><br>
   <button id="clear">清空全部</button>
   <button id="download" disabled>生成透明背景大圖</button>
   <div style="margin-top:10px; font-size:14px; opacity:0.8;" id="info"></div>
 </div>
-
 <canvas id="canvas"></canvas>
 
 <script>
-const picker   = document.getElementById('picker');
-const preview  = document.getElementById('preview');
-const canvas   = document.getElementById('canvas');
-const ctx      = canvas.getContext('2d');
-let images = [];
+const picker = document.getElementById('picker');
+const preview = document.getElementById('preview');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let photos = []; // 改用物件陣列 {img, timestamp}
 
-const preset   = document.getElementById('preset');
-const colsIn   = document.getElementById('cols');
-const rowsIn   = document.getElementById('rows');
-const xSpan    = document.getElementById('x');
+const preset = document.getElementById('preset');
+const colsIn = document.getElementById('cols');
+const rowsIn = document.getElementById('rows');
+const xSpan = document.getElementById('x');
+const sortMode = document.getElementById('sortMode');
 
 // —— 預設選單切換 ——
 preset.onchange = () => {
@@ -123,8 +124,8 @@ preset.onchange = () => {
 // —— 取得目前要用的格數 ——
 function getGrid() {
   if (preset.value === 'auto') {
-    const n = images.length;
-    if (n <= 6)  return {cols:3, rows:2};
+    const n = photos.length;
+    if (n <= 6) return {cols:3, rows:2};
     if (n <= 12) return {cols:4, rows:3};
     const s = Math.ceil(Math.sqrt(n));
     return {cols:s, rows:s};
@@ -134,20 +135,39 @@ function getGrid() {
   return {cols:c, rows:r};
 }
 
+// —— 排序並重新渲染預覽縮圖 ——
+function sortAndRenderPreview() {
+  let sorted = [...photos];
+  if (sortMode.value === 'old-new') {
+    sorted.sort((a, b) => a.timestamp - b.timestamp);
+  } else if (sortMode.value === 'new-old') {
+    sorted.sort((a, b) => b.timestamp - a.timestamp);
+  }
+  // 上傳順序就不排序
+
+  preview.innerHTML = '';
+  sorted.forEach(photo => {
+    const div = document.createElement('div');
+    div.className = "thumb";
+    div.innerHTML = `<img src="${photo.img.src}">`;
+    preview.appendChild(div);
+  });
+}
+
 // —— 上傳圖片 ——
 picker.onchange = e => {
   [...e.target.files].forEach(file => {
     if (!file.type.startsWith('image/')) return;
-      const img = new Image();
-      img.onload = () => {
-        images.push(img);
-        const div = document.createElement('div');
-        div.className="thumb";
-        div.innerHTML = `<img src="${img.src}">`;
-        preview.appendChild(div);
-        updateLayout();               // ← 這一行一定要在加完圖後呼叫！
-      };
-      img.src = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      photos.push({
+        img: img,
+        timestamp: file.lastModified
+      });
+      sortAndRenderPreview();   // 上傳完立刻按照目前排序規則排列
+      updateLayout();
+    };
+    img.src = URL.createObjectURL(file);
   });
 };
 
@@ -168,70 +188,74 @@ function updateLayout() {
 
   const {cols:gc, rows:gr} = getGrid();
   const total = gc * gr;
-  document.getElementById('info').textContent = 
-    `即將生成 ${gc}×${gr} = ${total} 格（使用前 ${Math.min(images.length, total)} 張）`;
-
-  document.getElementById('download').disabled = images.length === 0;
+  document.getElementById('info').textContent =
+    `即將生成 ${gc}×${gr} = ${total} 格（使用前 ${Math.min(photos.length, total)} 張）`;
+  document.getElementById('download').disabled = photos.length === 0;
 }
 
-const gapSlider    = document.getElementById('gap');
+const gapSlider = document.getElementById('gap');
 const radiusSlider = document.getElementById('radius');
 const shadowSlider = document.getElementById('shadow');
-
 gapSlider.oninput = radiusSlider.oninput = shadowSlider.oninput = updateLayout;
 colsIn.oninput = rowsIn.oninput = updateLayout;
 
+// 新增：排序方式改變時立即重排
+sortMode.onchange = () => {
+  sortAndRenderPreview();
+  updateLayout();
+};
+
 document.getElementById('clear').onclick = () => {
-  images = [];
+  photos = [];
   preview.innerHTML = '';
   updateLayout();
 };
 
 // —— 點擊「生成」——
 document.getElementById('download').onclick = () => {
-  const gap    = +gapSlider.value;
+  const gap = +gapSlider.value;
   const radius = +radiusSlider.value;
   const shadow = +shadowSlider.value;
   const {cols, rows} = getGrid();
   const totalCells = cols * rows;
 
+  // 先按照目前排序方式取得最終順序
+  let sortedPhotos = [...photos];
+  if (sortMode.value === 'old-new') sortedPhotos.sort((a,b)=>a.timestamp-b.timestamp);
+  else if (sortMode.value === 'new-old') sortedPhotos.sort((a,b)=>b.timestamp-a.timestamp);
+
   const W = 460;
   const H = 1020;
-
-  canvas.width  = cols * W + (cols + 1) * gap;
+  canvas.width = cols * W + (cols + 1) * gap;
   canvas.height = rows * H + (rows + 1) * gap;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height); // 透明底
-
-  images.slice(0, totalCells).forEach((img, i) => {
+  sortedPhotos.slice(0, totalCells).forEach((photo, i) => {
+    const img = photo.img;
     const col = i % cols;
     const row = Math.floor(i / cols);
     const x = gap + col * (W + gap);
     const y = gap + row * (H + gap);
 
     ctx.save();
-
-    ctx.shadowColor   = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur    = shadow * 2;
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = shadow * 2;
     ctx.shadowOffsetY = shadow;
 
-    // 圓角剪裁
     const r = radius;
     ctx.beginPath();
     ctx.moveTo(x + r, y);
-    ctx.arcTo(x + W, y,       x + W, y + H, r);
-    ctx.arcTo(x + W, y + H,   x,     y + H, r);
-    ctx.arcTo(x,     y + H,   x,     y,     r);
-    ctx.arcTo(x,     y,       x + W, y,     r);
+    ctx.arcTo(x + W, y, x + W, y + H, r);
+    ctx.arcTo(x + W, y + H, x, y + H, r);
+    ctx.arcTo(x, y + H, x, y, r);
+    ctx.arcTo(x, y, x + W, y, r);
     ctx.closePath();
     ctx.clip();
 
-    // 圖片置中
     const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
     const dw = img.naturalWidth * scale;
     const dh = img.naturalHeight * scale;
     ctx.drawImage(img, x + (W - dw)/2, y + (H - dh)/2, dw, dh);
-
     ctx.restore();
   });
 
@@ -243,7 +267,6 @@ document.getElementById('download').onclick = () => {
   }, 'image/png');
 };
 
-// 頁面載入完立刻初始化一次
 updateLayout();
 </script>
 </body>
