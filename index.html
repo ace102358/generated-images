@@ -15,19 +15,8 @@
     transition: all .2s;
   }
 
-  h1 {
-    text-align: center;
-    padding: 20px 0 10px;
-    font-size: 26px;
-  }
-
-  .desc {
-    text-align: center;
-    margin: 20px auto;
-    padding: 0 15px;
-    max-width: 800px;
-  }
-
+  h1 { text-align: center; padding: 20px 0 10px; font-size: 26px; }
+  .desc { text-align: center; margin: 20px auto; padding: 0 15px; max-width: 800px; }
   #picker { display: none; }
 
   #preview {
@@ -51,348 +40,131 @@
     position: relative;
   }
 
-  .thumb:active { cursor: grabbing; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb.dragging { opacity: 0.75; transform: scale(1.08) rotate(2deg); z-index: 100; }
+  .thumb.drag-over { border: 3px dashed #bb86fc; transform: scale(1.05); }
 
-  .thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: all .2s;
-  }
-
-  .thumb.dragging {
-    opacity: 0.75;
-    transform: scale(1.08) rotate(2deg);
-    box-shadow: 0 30px 70px rgba(59,130,246,0.88), 0 0 0 4px #bb86fc inset;
-    z-index: 100;
-  }
-
-  .thumb.dragging::after {
-    content: "拖拽中";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.7);
-    color: #fff;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: bold;
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .thumb.drag-over {
-    border: 3px dashed #bb86fc;
-    background: rgba(59,130,246,0.88);
-    box-shadow: 0 0 25px rgba(59,130,246,0.88);
-    transform: scale(1.05);
-  }
-
-  .dragging-active .thumb:not(.dragging) {
-    opacity: 0.55;
-    filter: brightness(0.75);
-  }
-
-  /* ==================== 全頁拖拽提示 ==================== */
-  body.drag-over {
-    border: 6px dashed #bb86fc;
-    background: rgba(187, 134, 252, 0.12);
-  }
-  body.drag-over::before {
-    content: "放開滑鼠以新增圖片 📤";
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 36px;
-    font-weight: bold;
-    color: #bb86fc;
-    text-shadow: 0 0 30px rgba(0,0,0,0.9);
-    pointer-events: none;
-    z-index: 9999;
-    background: rgba(26,0,51,0.85);
-    padding: 24px 48px;
-    border-radius: 30px;
-    white-space: nowrap;
-  }
-
-  /* 右側控制欄 */
+  body.drag-over { border: 6px dashed #bb86fc; background: rgba(187, 134, 252, 0.12); }
+  
   .controls {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 320px;
-    padding: 20px 16px;
-    background: rgba(26, 0, 51, 0.95);
-    backdrop-filter: blur(20px);
-    border-left: 1px solid rgba(255,255,255,0.12);
-    overflow-y: auto;
-    z-index: 1000;
-    text-align: left;
-  }
-
-  .controls h3 {
-    margin: 0 0 16px;
-    font-size: 18px;
-    opacity: 0.9;
-  }
-
-  .controls > div {
-    margin: 20px 0;
+    position: fixed; top: 0; right: 0; bottom: 0; width: 320px;
+    padding: 20px 16px; background: rgba(26, 0, 51, 0.95);
+    backdrop-filter: blur(20px); border-left: 1px solid rgba(255,255,255,0.12);
+    overflow-y: auto; z-index: 1000;
   }
 
   #uploadBtn {
-    width: 100%;
-    padding: 18px 16px;
-    margin: 8px 0 24px;
-    border-radius: 16px;
-    border: none;
-    background: linear-gradient(135deg, #cf9eff, #7b4dff);
-    color: #000;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 8px 25px rgba(123,77,255,0.4);
-    transition: all .2s;
+    width: 100%; padding: 18px 16px; margin: 8px 0 24px; border-radius: 16px; border: none;
+    background: linear-gradient(135deg, #cf9eff, #7b4dff); color: #000;
+    font-size: 18px; font-weight: bold; cursor: pointer;
   }
 
-  #uploadBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(123,77,255,0.5);
+  .controls select, .controls input:not([type="range"]), .controls button {
+    width: 100%; padding: 12px 16px; margin: 8px 0; border-radius: 12px;
+    border: none; font-size: 16px; box-sizing: border-box;
   }
 
-  #uploadBtn small {
-    display: block;
-    font-size: 13px;
-    font-weight: normal;
-    margin-top: 4px;
-    opacity: 0.9;
-  }
+  .controls select, .controls input:not([type="range"]) { background: #2a1a44; color: #fff; }
+  .controls button#clear { background: #ff4d4d; color: #fff; font-weight: bold; cursor: pointer; margin-top: 20px; }
+  .controls button#download { background: #bb86fc; color: #000; font-weight: bold; cursor: pointer; }
 
-  .controls select,
-  .controls input:not([type="range"]),
-  .controls button {
-    width: 100%;
-    padding: 12px 16px;
-    margin: 8px 0;
-    border-radius: 12px;
-    border: none;
-    font-size: 16px;
-    box-sizing: border-box;
-  }
-
-  .controls select,
-  .controls input:not([type="range"]) {
-    background: #2a1a44;
-    color: #fff;
-  }
-
-  .controls button {
-    background: #bb86fc;
-    color: #000;
-    font-weight: bold;
-    cursor: pointer;
-  }
-
-  .controls .slider {
-    display: block;
-    margin: 16px 0;
-    font-size: 15px;
-  }
-
-  .controls input[type=range] {
-    width: 100%;
-  }
-
-  .controls #info {
-    font-size: 14px;
-    opacity: 0.8;
-    margin-top: 20px;
-    line-height: 1.4;
-  }
-
-  canvas {
-    display: block;
-    max-width: 100%;
-    margin: 40px auto;
-    border-radius: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-  }
-
-  /* 手機窄螢幕適配 */
   @media (max-width: 800px) {
-    body {
-      padding: 0 0 380px 0;
-    }
-    .controls {
-      position: fixed;
-      right: 0;
-      left: 0;
-      top: auto;
-      bottom: 0;
-      width: 100%;
-      height: auto;
-      max-height: 380px;
-      border-left: none;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      padding: 16px;
-    }
-    #preview {
-      padding: 20px 15px 400px;
-    }
+    body { padding: 0 0 380px 0; }
+    .controls { top: auto; bottom: 0; width: 100%; max-height: 380px; border-left: none; border-top: 1px solid rgba(255,255,255,0.1); }
+    #preview { padding: 20px 15px 400px; }
   }
 </style>
 </head>
 <body id="dropZone">
 
-<h1>POGO展示圖生成器By金昇工作室</h1>
-<p class="desc">支援 1×1 到 10×10 任意格數｜時間排序</p>
+<h1>POGO展示圖生成器 By 金昇工作室</h1>
+<p class="desc">支援 1×1 到 10×10 任意格數｜支援手動拖拽排序</p>
 
 <div id="preview"></div>
 
 <div class="controls">
   <h3>📤 上傳圖片</h3>
-  <button id="uploadBtn">
-    點擊上傳寶可夢截圖
-    <small>可多選</small>
-  </button>
+  <button id="uploadBtn">點擊或拖拽圖片到此處</button>
 
   <h3>排列與排序</h3>
   <div>
-    <label>排列方式</label><br>
+    <label>排列方式</label>
     <select id="preset">
       <option value="auto">自動排列</option>
-      <option value="3x2">3×2（6隻橫向）</option>
-      <option value="2x3">2×3（6隻直向）</option>
+      <option value="3x2">3×2（橫向）</option>
+      <option value="2x3">2×3（直向）</option>
       <option value="3x3">3×3（9隻）</option>
       <option value="4x4">4×4（16隻）</option>
-      <option value="5x5">5×5（25隻）</option>
-      <option value="6x6">6×6（36隻）</option>
       <option value="custom">自訂格數 →</option>
     </select>
-    <div style="margin:12px 0;">
-      <input type="number" id="cols" min="1" max="10" value="3" style="display:none; width:80px;">
-      <span id="x" style="display:none; margin:0 8px;">×</span>
-      <input type="number" id="rows" min="1" max="10" value="2" style="display:none; width:80px;">
+    <div id="customInputs" style="display:none; margin:12px 0;">
+      寬 <input type="number" id="cols" min="1" max="10" value="3" style="width:60px;"> 
+      高 <input type="number" id="rows" min="1" max="10" value="2" style="width:60px;">
     </div>
   </div>
 
   <div>
-    <label>排序方式</label><br>
+    <label>排序方式</label>
     <select id="sortMode">
       <option value="upload">上傳順序</option>
       <option value="old-new" selected>時間順序（舊→新）</option>
       <option value="new-old">時間順序（新→舊）</option>
-      <option value="manual" disabled>手動調整中（拖曳後自動切換）</option>
+      <option value="manual" disabled>手動調整中</option>
     </select>
   </div>
 
   <h3>視覺調整</h3>
-  <div class="slider">間距　<input type="range" id="gap" min="0" max="120" value="0"><b id="g">0px</b></div>
-  <div class="slider">圓角　<input type="range" id="radius" min="0" max="100" value="0"><b id="r">0px</b></div>
-  <div class="slider">陰影　<input type="range" id="shadow" min="0" max="80" value="0"><b id="s">0px</b></div>
+  <div class="slider">間距 <input type="range" id="gap" min="0" max="120" value="0"><b id="g">0px</b></div>
+  <div class="slider">圓角 <input type="range" id="radius" min="0" max="100" value="0"><b id="r">0px</b></div>
+  <div class="slider">陰影 <input type="range" id="shadow" min="0" max="80" value="0"><b id="s">0px</b></div>
 
-  <h3>操作</h3>
-  <button id="clear">清空全部</button>
   <button id="download" disabled>生成透明背景大圖</button>
-  
-  <div id="info" style="margin-top:24px;"></div>
+  <button id="clear">清空全部</button>
+  <div id="info" style="margin-top:24px; font-size: 14px; opacity: 0.8;"></div>
 </div>
 
 <input type="file" id="picker" multiple accept="image/*">
-<canvas id="canvas"></canvas>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <script>
+let photos = [];
+let draggedItem = null;
+
 const picker = document.getElementById('picker');
 const preview = document.getElementById('preview');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-let photos = [];
-const preset = document.getElementById('preset');
-const colsIn = document.getElementById('cols');
-const rowsIn = document.getElementById('rows');
-const xSpan = document.getElementById('x');
 const sortMode = document.getElementById('sortMode');
-let draggedItem = null;
+const preset = document.getElementById('preset');
+const gapSlider = document.getElementById('gap');
+const radiusSlider = document.getElementById('radius');
+const shadowSlider = document.getElementById('shadow');
 
-// ==================== 右側上傳按鈕 ====================
-const uploadBtn = document.getElementById('uploadBtn');
-uploadBtn.onclick = () => picker.click();
-
-// ==================== 全頁拖拽上傳（新增功能） ====================
-const dropZone = document.getElementById('dropZone');
-
-dropZone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  dropZone.classList.add('drag-over');
-});
-
-dropZone.addEventListener('dragleave', () => {
-  dropZone.classList.remove('drag-over');
-});
-
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-
-  const files = e.dataTransfer.files;
-  if (!files || files.length === 0) return;
-
+// 圖片加載處理
+function handleFiles(files) {
   [...files].forEach(file => {
     if (!file.type.startsWith('image/')) return;
     const img = new Image();
     img.onload = () => {
-      photos.push({ img, timestamp: file.lastModified });
+      photos.push({ img, timestamp: file.lastModified, id: Math.random() });
       renderPreview();
       updateLayout();
     };
     img.src = URL.createObjectURL(file);
   });
-});
-
-preset.onchange = () => {
-  if (preset.value === 'custom') {
-    colsIn.style.display = rowsIn.style.display = xSpan.style.display = 'inline-block';
-  } else {
-    colsIn.style.display = rowsIn.style.display = xSpan.style.display = 'none';
-    if (preset.value !== 'auto') {
-      const [c, r] = preset.value.split('x');
-      colsIn.value = c; rowsIn.value = r;
-    }
-  }
-  updateLayout();
-};
-
-function getGrid() {
-  if (preset.value === 'auto') {
-    const n = photos.length;
-    if (n <= 6) return {cols:3, rows:2};
-    if (n <= 12) return {cols:4, rows:3};
-    const s = Math.ceil(Math.sqrt(n));
-    return {cols:s, rows:s};
-  }
-  const c = Math.max(1, Math.min(10, parseInt(colsIn.value) || 3));
-  const r = Math.max(1, Math.min(10, parseInt(rowsIn.value) || 2));
-  return {cols:c, rows:r};
 }
 
+// 獲取當前排序後的圖片陣列 (關鍵修正處)
 function getSortedPhotos() {
   let sorted = [...photos];
-  if (sortMode.value === 'old-new') sorted.sort((a,b)=>a.timestamp-b.timestamp);
-  else if (sortMode.value === 'new-old') sorted.sort((a,b)=>b.timestamp-a.timestamp);
+  if (sortMode.value === 'old-new') sorted.sort((a,b)=>a.timestamp - b.timestamp);
+  else if (sortMode.value === 'new-old') sorted.sort((a,b)=>b.timestamp - a.timestamp);
   return sorted;
 }
 
 function renderPreview() {
   preview.innerHTML = '';
   const sorted = getSortedPhotos();
-
-  if (draggedItem) preview.classList.add('dragging-active');
-  else preview.classList.remove('dragging-active');
 
   sorted.forEach((photo, index) => {
     const div = document.createElement('div');
@@ -401,146 +173,97 @@ function renderPreview() {
     div.dataset.index = index;
     div.innerHTML = `<img src="${photo.img.src}">`;
 
-    div.addEventListener('dragstart', (e) => {
-      draggedItem = div;
-      setTimeout(() => div.classList.add('dragging'), 0);
-      e.dataTransfer.effectAllowed = 'move';
-    });
+    div.ondragstart = (e) => {
+      draggedItem = index;
+      div.classList.add('dragging');
+    };
 
-    div.addEventListener('dragend', () => {
-      div.classList.remove('dragging');
-      document.querySelectorAll('.thumb').forEach(t => t.classList.remove('drag-over'));
-      draggedItem = null;
-      preview.classList.remove('dragging-active');
+    div.ondragover = (e) => { e.preventDefault(); div.classList.add('drag-over'); };
+    div.ondragleave = () => div.classList.remove('drag-over');
+
+    div.ondrop = (e) => {
+      e.preventDefault();
+      const fromIndex = draggedItem;
+      const toIndex = index;
+      
+      // 根據當前顯示順序重新調整原始陣列
+      const currentSorted = getSortedPhotos();
+      const [moved] = currentSorted.splice(fromIndex, 1);
+      currentSorted.splice(toIndex, 0, moved);
+      
+      photos = currentSorted; // 更新原始陣列為手動排序後的結果
       sortMode.value = 'manual';
       sortMode.querySelector('option[value="manual"]').disabled = false;
-    });
-
-    div.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      if (draggedItem === div) return;
-      document.querySelectorAll('.thumb').forEach(t => t.classList.remove('drag-over'));
-      div.classList.add('drag-over');
-    });
-
-    div.addEventListener('dragleave', () => {
-      div.classList.remove('drag-over');
-    });
-
-    // ==================== 關鍵修改：避免與全頁檔案拖拽衝突 ====================
-    div.addEventListener('drop', (e) => {
-      // 如果是拖入新圖片檔案，就讓 body 的 drop 處理
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        return;
-      }
-      // 否則執行原本的重新排序邏輯
-      e.preventDefault();
-      if (draggedItem === div) return;
-      const fromIndex = parseInt(draggedItem.dataset.index);
-      const toIndex = parseInt(div.dataset.index);
-      const [moved] = photos.splice(fromIndex, 1);
-      photos.splice(toIndex, 0, moved);
+      
       renderPreview();
       updateLayout();
-    });
+    };
 
     preview.appendChild(div);
   });
 }
 
-picker.onchange = e => {
-  [...e.target.files].forEach(file => {
-    if (!file.type.startsWith('image/')) return;
-    const img = new Image();
-    img.onload = () => {
-      photos.push({ img, timestamp: file.lastModified });
-      renderPreview();
-      updateLayout();
-    };
-    img.src = URL.createObjectURL(file);
-  });
-};
-
 function updateLayout() {
-  const {cols} = getGrid();
+  const {cols, rows} = getGrid();
   preview.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
   preview.style.gap = gapSlider.value + 'px';
-
+  
   document.querySelectorAll('.thumb').forEach(t => {
     t.style.borderRadius = radiusSlider.value + 'px';
-    t.style.boxShadow = `0 ${shadowSlider.value}px ${shadowSlider.value*3}px rgba(0,0,0,0.8)`;
   });
 
   document.getElementById('g').textContent = gapSlider.value + 'px';
   document.getElementById('r').textContent = radiusSlider.value + 'px';
   document.getElementById('s').textContent = shadowSlider.value + 'px';
-
-  const {cols:gc, rows:gr} = getGrid();
-  const total = gc * gr;
-  document.getElementById('info').textContent = `即將生成 ${gc}×${gr} = ${total} 格（使用前 ${Math.min(photos.length, total)} 張）`;
+  
+  const total = cols * rows;
+  document.getElementById('info').textContent = `格數：${cols}×${rows}，已選：${photos.length} 張`;
   document.getElementById('download').disabled = photos.length === 0;
 }
 
-const gapSlider    = document.getElementById('gap');
-const radiusSlider = document.getElementById('radius');
-const shadowSlider = document.getElementById('shadow');
+function getGrid() {
+  if (preset.value === 'auto') {
+    const n = photos.length;
+    if (n <= 6) return {cols:3, rows:2};
+    const s = Math.ceil(Math.sqrt(n));
+    return {cols:s, rows:Math.ceil(n/s)};
+  }
+  if (preset.value === 'custom') {
+    return {cols: parseInt(document.getElementById('cols').value), rows: parseInt(document.getElementById('rows').value)};
+  }
+  const [c, r] = preset.value.split('x');
+  return {cols: parseInt(c), rows: parseInt(r)};
+}
 
-gapSlider.oninput = radiusSlider.oninput = shadowSlider.oninput = updateLayout;
-colsIn.oninput = rowsIn.oninput = updateLayout;
-
-sortMode.onchange = () => {
-  if (sortMode.value !== 'manual') renderPreview();
-  updateLayout();
-};
-
-document.getElementById('clear').onclick = () => {
-  photos = [];
-  preview.innerHTML = '';
-  sortMode.value = 'old-new';
-  sortMode.querySelector('option[value="manual"]').disabled = true;
-  updateLayout();
-};
-
+// 下載功能 (關鍵修正：使用 getSortedPhotos)
 document.getElementById('download').onclick = () => {
+  const {cols, rows} = getGrid();
+  const sorted = getSortedPhotos(); // 獲取正確順序
   const gap = +gapSlider.value;
   const radius = +radiusSlider.value;
-  const shadow = +shadowSlider.value;
-  const {cols, rows} = getGrid();
-  const totalCells = cols * rows;
-  const W = 460;
-  const H = 1020;
+  const W = 460, H = 1020;
 
   canvas.width = cols * W + (cols + 1) * gap;
   canvas.height = rows * H + (rows + 1) * gap;
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  photos.slice(0, totalCells).forEach((photo, i) => {
-    const img = photo.img;
+  sorted.slice(0, cols * rows).forEach((photo, i) => {
     const col = i % cols;
     const row = Math.floor(i / cols);
     const x = gap + col * (W + gap);
     const y = gap + row * (H + gap);
 
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = shadow * 2;
-    ctx.shadowOffsetY = shadow;
-
-    const r = radius;
+    // 繪製圓角路徑
     ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + W, y, x + W, y + H, r);
-    ctx.arcTo(x + W, y + H, x, y + H, r);
-    ctx.arcTo(x, y + H, x, y, r);
-    ctx.arcTo(x, y, x + W, y, r);
-    ctx.closePath();
+    ctx.roundRect(x, y, W, H, radius);
     ctx.clip();
 
+    // 計算適配比例
+    const img = photo.img;
     const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
     const dw = img.naturalWidth * scale;
     const dh = img.naturalHeight * scale;
-
     ctx.drawImage(img, x + (W - dw)/2, y + (H - dh)/2, dw, dh);
     ctx.restore();
   });
@@ -548,12 +271,33 @@ document.getElementById('download').onclick = () => {
   canvas.toBlob(blob => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `PokemonGO_${cols}x${rows}_透明_${new Date().toISOString().slice(0,10)}.png`;
+    a.download = `POGO_Export_${new Date().getTime()}.png`;
     a.click();
   }, 'image/png');
 };
 
-updateLayout();
+// 事件監聽
+document.getElementById('uploadBtn').onclick = () => picker.click();
+picker.onchange = (e) => handleFiles(e.target.files);
+dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); };
+dropZone.ondragleave = () => dropZone.classList.remove('drag-over');
+dropZone.ondrop = (e) => { e.preventDefault(); dropZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); };
+
+preset.onchange = () => {
+  document.getElementById('customInputs').style.display = preset.value === 'custom' ? 'block' : 'none';
+  updateLayout();
+};
+sortMode.onchange = () => { renderPreview(); updateLayout(); };
+gapSlider.oninput = radiusSlider.oninput = shadowSlider.oninput = updateLayout;
+document.getElementById('cols').oninput = document.getElementById('rows').oninput = updateLayout;
+
+document.getElementById('clear').onclick = () => {
+  photos = [];
+  renderPreview();
+  updateLayout();
+  sortMode.value = 'old-new';
+  sortMode.querySelector('option[value="manual"]').disabled = true;
+};
 </script>
 </body>
 </html>
