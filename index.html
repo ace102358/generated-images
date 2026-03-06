@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <title>POGO 工具箱 | 金昇工作室</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Serif+TC:wght@400;700&family=Inter:wght@400;700&family=Playfair+Display&family=Bebas+Neue&display=swap" rel="stylesheet">
+
 <style>
   :root {
     --primary: #bb86fc;
@@ -11,9 +14,6 @@
     --secondary: #03dac6;
     --background: #121212;
     --surface: #1e1e1e;
-    --error: #cf6679;
-    --on-primary: #000000;
-    --on-background: #ffffff;
     --glass: rgba(30, 30, 30, 0.7);
     --glass-border: rgba(255, 255, 255, 0.12);
   }
@@ -24,19 +24,16 @@
     margin: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: radial-gradient(circle at top left, #2a1a44, #121212 60%);
-    color: var(--on-background);
+    color: #fff;
     min-height: 100vh;
-    overflow-x: hidden;
-    padding-bottom: 80px; /* Mobile safe area */
+    padding-bottom: 80px;
   }
 
   /* 滾動條美化 */
   ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-track { background: var(--background); }
   ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-  /* ==================== 頂部導航 ==================== */
   header {
     position: sticky; top: 0; z-index: 1000;
     background: rgba(18, 18, 18, 0.85);
@@ -46,132 +43,121 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
   .brand { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #fff, #bb86fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   
-  .tabs { display: flex; gap: 8px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; }
+  .tabs { display: flex; gap: 8px; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; overflow-x: auto; }
   .tab-btn {
-    background: none; border: none; color: #aaa; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+    background: none; border: none; color: #aaa; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; white-space: nowrap;
   }
   .tab-btn.active { background: var(--surface); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 
-  /* ==================== 通用容器 ==================== */
   .view-section { display: none; padding: 20px; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.4s ease; }
   .view-section.active { display: block; }
-  
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* ==================== 視圖 1: 生成器 ==================== */
-  .generator-layout {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 20px;
-  }
+  /* 格線佈局 */
+  .generator-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
 
-  #preview {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
-    padding-bottom: 100px; min-height: 50vh;
-  }
-
-  .thumb {
-    aspect-ratio: 0.466; border-radius: 20px; overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    position: relative; transition: transform 0.2s, box-shadow 0.2s;
-    cursor: grab; border: 2px solid transparent;
-  }
+  /* 生成器預覽 */
+  #preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding-bottom: 100px; min-height: 50vh; }
+  .thumb { aspect-ratio: 0.466; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; cursor: grab; }
   .thumb img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-  .thumb:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.6); }
   .thumb.dragging { opacity: 0.5; border: 2px dashed var(--primary); }
-  .thumb.drag-over { transform: scale(1.05); border-color: var(--primary); }
-
-  /* 空狀態提示 */
+  
   .empty-state {
     grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 400px; border: 3px dashed var(--glass-border); border-radius: 24px;
-    color: #666; transition: all 0.3s;
+    cursor: pointer; transition: all 0.3s;
   }
   .empty-state.drag-over { background: rgba(187, 134, 252, 0.1); border-color: var(--primary); color: var(--primary); }
   
-  /* ==================== 視圖 2: 壓縮工具 ==================== */
-  .compressor-container {
-    max-width: 800px; margin: 0 auto;
-  }
+  /* 壓縮工具 */
+  .compressor-container { max-width: 800px; margin: 0 auto; }
   .drop-zone {
     border: 3px dashed var(--glass-border); border-radius: 24px;
     padding: 60px 20px; text-align: center; cursor: pointer;
     background: rgba(255,255,255,0.02); transition: all 0.3s;
   }
   .drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: rgba(187, 134, 252, 0.08); }
-  
-  .file-list { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
   .file-item {
-    background: var(--surface); padding: 16px; border-radius: 16px;
-    display: flex; justify-content: space-between; align-items: center;
-    border: 1px solid var(--glass-border);
+    background: var(--surface); padding: 16px; border-radius: 16px; margin-top: 12px;
+    display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--glass-border);
   }
-  .file-info strong { display: block; font-size: 15px; margin-bottom: 4px; }
-  .file-info span { font-size: 13px; color: #aaa; }
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px; }
-  .tag-success { background: rgba(3, 218, 198, 0.2); color: var(--secondary); }
+
+  /* 浮水印預覽區 (修正版) */
+  #wmPreviewArea {
+    background: #0f0f1a; border-radius: 24px; position: relative; overflow: hidden;
+    min-height: 500px; 
+    /* 修正關鍵：改為相對定位，不使用Flex導致的並排問題 */
+    border: 3px dashed var(--glass-border); transition: 0.3s; cursor: pointer;
+  }
+  #wmPreviewArea.drag-over { border-color: var(--primary); background: rgba(187, 134, 252, 0.1); }
   
-  /* ==================== 控制面板 (Glassmorphism) ==================== */
+  /* 畫布 */
+  #wmCanvas { 
+    max-width: 95%; max-height: 95%; 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+    /* 讓畫布絕對居中 */
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 1;
+  }
+  
+  /* 提示文字 */
+  #wmPlaceholder {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 2; text-align: center; width: 100%; pointer-events: none;
+  }
+
+  /* 控制面板 */
   .controls-panel {
     background: var(--glass); backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px; padding: 24px;
+    border: 1px solid var(--glass-border); border-radius: 24px; padding: 24px;
     height: fit-content; position: sticky; top: 80px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.4);
   }
 
   h3 { margin: 0 0 16px; font-size: 16px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-  
   .control-group { margin-bottom: 24px; }
   label { display: block; margin-bottom: 8px; font-size: 14px; }
   
-  select, input[type="number"] {
+  select, input[type="number"], input[type="text"], input[type="color"] {
     width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border);
-    color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; outline: none;
-    transition: 0.2s;
+    color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; outline: none; transition: 0.2s;
   }
-  select:focus, input:focus { border-color: var(--primary); }
-
+  input[type="color"] { height: 45px; padding: 0; cursor: pointer; }
+  
   .btn {
-    width: 100%; padding: 14px; border: none; border-radius: 12px;
-    font-size: 16px; font-weight: 700; cursor: pointer; transition: transform 0.1s, filter 0.2s;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s;
   }
   .btn:active { transform: scale(0.98); }
-  .btn-primary {
-    background: linear-gradient(135deg, #cf9eff, #7b4dff); color: #000;
-    box-shadow: 0 8px 20px rgba(123, 77, 255, 0.3);
-  }
+  .btn-primary { background: linear-gradient(135deg, #cf9eff, #7b4dff); color: #000; box-shadow: 0 8px 20px rgba(123, 77, 255, 0.3); }
   .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
-  .btn-secondary:hover { background: rgba(255,255,255,0.15); }
   .btn-danger { background: rgba(207, 102, 121, 0.2); color: #cf6679; }
   
   .slider-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   input[type=range] { width: 60%; accent-color: var(--primary); }
 
-  /* ==================== 手機適配 ==================== */
+  .pos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .pos-btn { padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; cursor: pointer; font-size: 12px; transition: 0.2s; }
+  .pos-btn.active { background: var(--primary); color: #000; font-weight: bold; }
+
   @media (max-width: 900px) {
     .generator-layout { grid-template-columns: 1fr; }
     .controls-panel {
       position: fixed; bottom: 0; left: 0; right: 0; top: auto;
       border-radius: 24px 24px 0 0;
-      transform: translateY(calc(100% - 70px)); /* 默認收起 */
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 2000;
+      transform: translateY(calc(100% - 70px)); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 2000; margin-top: 20px;
     }
     .controls-panel.expanded { transform: translateY(0); }
-    
-    /* 手機版拖拽把手 */
-    .panel-handle {
-      width: 40px; height: 5px; background: rgba(255,255,255,0.3);
-      border-radius: 3px; margin: -10px auto 20px;
-    }
-    
+    .panel-handle { width: 40px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; margin: -10px auto 20px; }
     #preview { padding-bottom: 100px; grid-template-columns: repeat(2, 1fr); }
+    #wmPreviewArea { min-height: 300px; }
   }
 </style>
 </head>
@@ -182,12 +168,12 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('generator')">展示圖生成</button>
     <button class="tab-btn" onclick="switchTab('compressor')">圖片壓縮</button>
+    <button class="tab-btn" onclick="switchTab('watermark')">浮水印製作</button>
   </div>
 </header>
 
 <section id="view-generator" class="view-section active">
   <div class="generator-layout">
-    
     <div id="dropZoneGen">
       <div id="preview">
         <div class="empty-state" onclick="document.getElementById('picker').click()">
@@ -197,55 +183,44 @@
         </div>
       </div>
     </div>
-
-    <div class="controls-panel" id="mobilePanel">
-      <div class="panel-handle" onclick="togglePanel()"></div> <h3>點擊上傳</h3>
+    <div class="controls-panel">
+      <div class="panel-handle" onclick="this.parentElement.classList.toggle('expanded')"></div>
+      <h3>生成操作</h3>
       <div class="control-group">
-        <button class="btn btn-primary" onclick="document.getElementById('picker').click()">
-          <span>🖼️ 點選上傳POGO截圖</span>
-        </button>
+        <button class="btn btn-primary" onclick="document.getElementById('picker').click()">🖼️ 選擇圖片</button>
       </div>
-
-      <h3>佈局設置</h3>
       <div class="control-group">
-        <select id="preset">
-          <option value="auto">✨ 自動排列 (推薦)</option>
-          <option value="3x2">3×2 (橫向)</option>
-          <option value="2x3">2×3 (直向)</option>
-          <option value="3x3">3×3 (九宮格)</option>
-          <option value="4x4">4×4 (16格)</option>
-          <option value="custom">🛠️ 自訂格數...</option>
+        <label>排列</label>
+        <select id="preset" onchange="updateGenLayout()">
+          <option value="auto">自動排列</option>
+          <option value="3x2">3×2</option>
+          <option value="2x3">2×3</option>
+          <option value="custom">自訂...</option>
         </select>
         <div id="customInputs" style="display:none; margin-top:10px; gap:10px; display: flex;">
-          <input type="number" id="cols" placeholder="寬" value="3">
+          <input type="number" id="cols" placeholder="寬" value="3" oninput="updateGenLayout()">
           <span style="align-self:center">×</span>
-          <input type="number" id="rows" placeholder="高" value="2">
+          <input type="number" id="rows" placeholder="高" value="2" oninput="updateGenLayout()">
         </div>
       </div>
-
-      <h3>排序方式</h3>
       <div class="control-group">
-        <select id="sortMode">
-          <option value="old-new">📅 時間：舊 → 新</option>
-          <option value="new-old">📅 時間：新 → 舊</option>
-          <option value="upload">📂 上傳順序</option>
-          <option value="manual" disabled>👆 手動拖拽中</option>
+        <label>排序</label>
+        <select id="sortMode" onchange="renderGenPreview()">
+          <option value="old-new">舊 → 新</option>
+          <option value="new-old">新 → 舊</option>
+          <option value="upload">上傳順序</option>
+          <option value="manual" disabled>手動拖拽中</option>
         </select>
       </div>
-
-      <h3>視覺微調</h3>
       <div class="control-group">
-        <div class="slider-row"><span>間距</span><input type="range" id="gap" min="0" max="100" value="0"></div>
-        <div class="slider-row"><span>圓角</span><input type="range" id="radius" min="0" max="80" value="0"></div>
-        <div class="slider-row"><span>陰影</span><input type="range" id="shadow" min="0" max="60" value="0"></div>
+        <div class="slider-row"><span>間距</span><input type="range" id="gap" max="100" value="0" oninput="updateGenLayout()"></div>
+        <div class="slider-row"><span>圓角</span><input type="range" id="radius" max="80" value="0" oninput="updateGenLayout()"></div>
+        <div class="slider-row"><span>陰影</span><input type="range" id="shadow" max="60" value="0" oninput="updateGenLayout()"></div>
       </div>
-
-      <div class="control-group" style="display: flex; gap: 10px;">
+      <div class="control-group" style="display:flex; gap:10px;">
         <button class="btn btn-danger" id="clearBtn">清空</button>
-        <button class="btn btn-primary" id="downloadBtn" disabled>點擊下載</button>
+        <button class="btn btn-primary" id="downloadBtn" disabled>下載</button>
       </div>
-      
-      <div id="genInfo" style="text-align: center; font-size: 12px; color: #888;">尚未選擇圖片</div>
     </div>
   </div>
 </section>
@@ -255,286 +230,493 @@
     <div class="drop-zone" id="dropZoneComp" onclick="document.getElementById('compInput').click()">
       <div style="font-size: 48px; margin-bottom: 20px;">⚡</div>
       <h2 style="margin: 0;">智能圖片壓縮</h2>
-      <p style="color: #aaa; margin-top: 10px;">自動優化至 9.9MB 以下 (適合 Discord/Line)</p>
+      <p style="color: #aaa; margin-top: 10px;">自動優化至 9.9MB 以下</p>
     </div>
-    
-    <div class="file-list" id="compResultList">
+    <div class="file-list" id="compResultList"></div>
+  </div>
+</section>
+
+<section id="view-watermark" class="view-section">
+  <div class="generator-layout">
+    <div id="wmPreviewArea" onclick="document.getElementById('wmInput').click()">
+      <div id="wmPlaceholder">
+        <div style="font-size: 40px; margin-bottom: 16px;">✒️</div>
+        拖拽圖片至此 或 點擊選擇<br><small style="font-size: 14px; opacity:0.6">支援多選預覽與打包</small>
       </div>
+      <canvas id="wmCanvas" style="display: none;"></canvas>
+    </div>
+
+    <div class="controls-panel">
+      <div class="panel-handle" onclick="this.parentElement.classList.toggle('expanded')"></div>
+      <h3>圖片來源</h3>
+      <div class="control-group">
+        <button class="btn btn-secondary" onclick="document.getElementById('wmInput').click()">📂 選擇圖片</button>
+        <small style="display:block; margin-top:5px; color:#888;">已選: <span id="wmCount">0</span> 張</small>
+      </div>
+      <h3>水印內容</h3>
+      <div class="control-group">
+        <input type="text" id="wmText" value="© GoldSun Studio" placeholder="輸入文字">
+        <div style="margin-top:10px;">
+          <select id="wmFont">
+            <option value="'Noto Sans TC', sans-serif">思源黑體</option>
+            <option value="'Noto Serif TC', serif">思源宋體</option>
+            <option value="'Inter', sans-serif">Inter</option>
+            <option value="'Playfair Display', serif">Playfair</option>
+            <option value="'Bebas Neue', display">Bebas Neue</option>
+          </select>
+        </div>
+      </div>
+      <h3>樣式調整</h3>
+      <div class="control-group">
+        <div class="slider-row"><span>大小</span><input type="range" id="wmSize" min="10" max="300" value="60"></div>
+        <div class="slider-row"><span>透明度</span><input type="range" id="wmOpacity" min="0" max="100" value="70"></div>
+        <div class="slider-row"><span>旋轉</span><input type="range" id="wmRotate" min="0" max="360" value="330"></div>
+        <div class="slider-row" style="margin-top:10px;"><span>顏色</span><input type="color" id="wmColor" value="#ffffff" style="width:50px;"></div>
+      </div>
+      <h3>位置設定</h3>
+      <div class="control-group">
+        <label><input type="checkbox" id="wmTile"> 啟用平鋪模式</label>
+        <div id="wmTileGapControl" style="display:none; margin-top:10px;">
+            <div class="slider-row"><span>間距</span><input type="range" id="wmTileGap" min="50" max="500" value="200"></div>
+        </div>
+        <div id="wmPosGrid" class="pos-grid">
+          <div class="pos-btn" data-pos="0.1,0.1">左上</div><div class="pos-btn" data-pos="0.5,0.1">中上</div><div class="pos-btn" data-pos="0.9,0.1">右上</div>
+          <div class="pos-btn" data-pos="0.1,0.5">左中</div><div class="pos-btn active" data-pos="0.5,0.5">正中</div><div class="pos-btn" data-pos="0.9,0.5">右中</div>
+          <div class="pos-btn" data-pos="0.1,0.9">左下</div><div class="pos-btn" data-pos="0.5,0.9">中下</div><div class="pos-btn" data-pos="0.9,0.9">右下</div>
+        </div>
+      </div>
+      <div class="control-group" style="display: flex; gap: 10px; margin-top:20px;">
+        <button class="btn btn-secondary" id="wmSaveSettings">💾 保存</button>
+        <button class="btn btn-primary" id="wmDownloadBtn">下載</button>
+      </div>
+      <button class="btn btn-primary" id="wmBatchBtn" style="background: linear-gradient(135deg, #ff4081, #ff80ab); display: none;">📦 批量打包 ZIP</button>
+      <div id="wmProgress" style="height:4px; background:#333; margin-top:10px; border-radius:2px; display:none;"><div id="wmProgressBar" style="width:0%; height:100%; background:#ff4081; transition:0.3s;"></div></div>
+    </div>
   </div>
 </section>
 
 <input type="file" id="picker" multiple accept="image/*" style="display: none;">
 <input type="file" id="compInput" multiple accept="image/*" style="display: none;">
+<input type="file" id="wmInput" multiple accept="image/*" style="display: none;">
 <canvas id="canvas" style="display: none;"></canvas>
 
 <script>
-// ==================== 全局變數 ====================
-let photos = [];
-let draggedItem = null;
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-
-// ==================== 標籤切換邏輯 ====================
+// ==================== 共用邏輯 ====================
 function switchTab(tabName) {
   document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-  
   document.getElementById(`view-${tabName}`).classList.add('active');
-  event.target.classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  if(tabName==='generator') btns[0].classList.add('active');
+  if(tabName==='compressor') btns[1].classList.add('active');
+  if(tabName==='watermark') {
+    btns[2].classList.add('active');
+    if(wmImg.src) wmResizeAndDraw();
+  }
 }
 
-// 手機版面板展開/收起
-function togglePanel() {
-  document.getElementById('mobilePanel').classList.toggle('expanded');
+// 萬能拖拽綁定
+function setupDrag(id, callback) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => {
+    el.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); });
+  });
+  el.addEventListener('dragover', () => el.classList.add('drag-over'));
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', (ev) => {
+    el.classList.remove('drag-over');
+    if(ev.dataTransfer.files.length) callback(ev.dataTransfer.files);
+  });
 }
 
-// ==================== 生成器邏輯 ====================
+// ==================== 1. 生成器 ====================
+let photos = [], draggedItem = null;
+const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
 const preset = document.getElementById('preset');
-const sortMode = document.getElementById('sortMode');
-const gapSlider = document.getElementById('gap');
-const radiusSlider = document.getElementById('radius');
-const shadowSlider = document.getElementById('shadow');
-const customInputs = document.getElementById('customInputs');
 
-// 監聽器綁定
-document.getElementById('picker').onchange = (e) => handleGenFiles(e.target.files);
-preset.onchange = () => {
-  customInputs.style.display = preset.value === 'custom' ? 'flex' : 'none';
-  updateGenLayout();
-};
-sortMode.onchange = () => { renderGenPreview(); updateGenLayout(); };
-[gapSlider, radiusSlider, shadowSlider].forEach(el => el.oninput = updateGenLayout);
-document.getElementById('cols').oninput = document.getElementById('rows').oninput = updateGenLayout;
-
-// 拖拽上傳 (生成器)
-const dropZoneGen = document.getElementById('dropZoneGen');
-dropZoneGen.ondragover = (e) => { e.preventDefault(); document.querySelector('.empty-state')?.classList.add('drag-over'); };
-dropZoneGen.ondragleave = () => document.querySelector('.empty-state')?.classList.remove('drag-over');
-dropZoneGen.ondrop = (e) => { 
-  e.preventDefault(); 
-  document.querySelector('.empty-state')?.classList.remove('drag-over');
-  handleGenFiles(e.dataTransfer.files); 
-};
+setupDrag('dropZoneGen', handleGenFiles);
+document.getElementById('picker').onchange = e => handleGenFiles(e.target.files);
+document.getElementById('clearBtn').onclick = () => { photos = []; updateGen(); };
+document.getElementById('downloadBtn').onclick = genDownload;
 
 function handleGenFiles(files) {
   [...files].forEach(file => {
     if(!file.type.startsWith('image/')) return;
     const img = new Image();
-    img.onload = () => {
-      photos.push({ img, timestamp: file.lastModified });
-      renderGenPreview();
-      updateGenLayout();
-    };
+    img.onload = () => { photos.push({img, timestamp: file.lastModified}); updateGen(); };
     img.src = URL.createObjectURL(file);
   });
 }
 
-function getSortedPhotos() {
-  let sorted = [...photos];
-  if(sortMode.value === 'old-new') sorted.sort((a,b)=>a.timestamp - b.timestamp);
-  else if(sortMode.value === 'new-old') sorted.sort((a,b)=>b.timestamp - a.timestamp);
-  return sorted;
+function getSorted() {
+  const mode = document.getElementById('sortMode').value;
+  let s = [...photos];
+  if(mode === 'old-new') s.sort((a,b)=>a.timestamp - b.timestamp);
+  else if(mode === 'new-old') s.sort((a,b)=>b.timestamp - a.timestamp);
+  return s;
 }
 
-function renderGenPreview() {
-  const preview = document.getElementById('preview');
-  
-  if(photos.length === 0) {
-    preview.innerHTML = `
-      <div class="empty-state" onclick="document.getElementById('picker').click()">
-        <div style="font-size: 40px; margin-bottom: 16px;">📥</div>
-        <h3>拖拽圖片至此 或 點擊上傳</h3>
-        <p style="font-size: 14px; opacity: 0.6;">支援多選上傳</p>
-      </div>`;
+function updateGen() {
+  const p = document.getElementById('preview');
+  if(photos.length===0) {
+    p.innerHTML = `<div class="empty-state" onclick="document.getElementById('picker').click()"><div style="font-size: 40px; margin-bottom: 16px;">📥</div><h3>拖拽圖片至此</h3></div>`;
+    document.getElementById('downloadBtn').disabled = true;
+    document.getElementById('genInfo').textContent = '尚未選擇圖片';
     return;
   }
-
-  preview.innerHTML = '';
-  const sorted = getSortedPhotos();
-
-  sorted.forEach((photo, index) => {
+  p.innerHTML = '';
+  const sorted = getSorted();
+  
+  // 計算佈局
+  const pVal = preset.value;
+  const colsIn = document.getElementById('cols').value;
+  const rowsIn = document.getElementById('rows').value;
+  document.getElementById('customInputs').style.display = pVal === 'custom' ? 'flex' : 'none';
+  
+  let c = 3, r = 2;
+  if(pVal === 'auto') { c = Math.ceil(Math.sqrt(photos.length)); r = Math.ceil(photos.length/c); }
+  else if(pVal === 'custom') { c = +colsIn || 3; r = +rowsIn || 2; }
+  else { const parts = pVal.split('x'); c = +parts[0]; r = +parts[1]; }
+  
+  // 渲染
+  const gap = document.getElementById('gap').value;
+  const rad = document.getElementById('radius').value;
+  p.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
+  p.style.gap = gap + 'px';
+  
+  sorted.forEach((photo, i) => {
     const div = document.createElement('div');
     div.className = 'thumb';
     div.draggable = true;
-    div.innerHTML = `<img src="${photo.img.src}">`;
+    div.innerHTML = `<img src="${photo.img.src}" style="border-radius:${rad}px">`;
+    div.style.borderRadius = rad + 'px';
     
-    // 拖拽排序邏輯
-    div.ondragstart = () => { draggedItem = index; div.classList.add('dragging'); };
+    // 拖拽排序
+    div.ondragstart = () => { draggedItem = i; div.classList.add('dragging'); };
     div.ondragend = () => div.classList.remove('dragging');
-    div.ondragover = (e) => { e.preventDefault(); div.classList.add('drag-over'); };
+    div.ondragover = e => { e.preventDefault(); div.classList.add('drag-over'); };
     div.ondragleave = () => div.classList.remove('drag-over');
-    div.ondrop = (e) => {
-      e.preventDefault();
+    div.ondrop = e => {
+      e.preventDefault(); e.stopPropagation();
       div.classList.remove('drag-over');
-      if(draggedItem === null) return;
-      
-      const currentSorted = getSortedPhotos();
-      const [moved] = currentSorted.splice(draggedItem, 1);
-      currentSorted.splice(index, 0, moved);
-      
-      photos = currentSorted;
-      sortMode.value = 'manual';
-      sortMode.querySelector('option[value="manual"]').disabled = false;
-      renderGenPreview();
+      const s = getSorted();
+      const [moved] = s.splice(draggedItem, 1);
+      s.splice(i, 0, moved);
+      photos = s;
+      document.getElementById('sortMode').value = 'manual';
+      document.querySelector('#sortMode option[value="manual"]').disabled = false;
+      updateGen();
     };
-    preview.appendChild(div);
+    p.appendChild(div);
   });
-}
-
-function getGrid() {
-  if (preset.value === 'custom') {
-    return { c: parseInt(document.getElementById('cols').value)||3, r: parseInt(document.getElementById('rows').value)||2 };
-  }
-  if (preset.value === 'auto') {
-    const n = photos.length;
-    if (n === 0) return {c:3, r:2};
-    if (n <= 6) return {c:3, r:2};
-    const s = Math.ceil(Math.sqrt(n));
-    return {c:s, r:Math.ceil(n/s)};
-  }
-  const [c, r] = preset.value.split('x');
-  return {c: +c, r: +r};
-}
-
-function updateGenLayout() {
-  const {c, r} = getGrid();
-  const preview = document.getElementById('preview');
   
-  // 更新 CSS Grid
-  if(photos.length > 0) {
-    preview.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
-    preview.style.gap = gapSlider.value + 'px';
-    document.querySelectorAll('.thumb').forEach(t => t.style.borderRadius = radiusSlider.value + 'px');
-  }
-
-  document.getElementById('genInfo').textContent = `格數: ${c}×${r} | 已選: ${photos.length} 張`;
-  document.getElementById('downloadBtn').disabled = photos.length === 0;
+  document.getElementById('genInfo').textContent = `佈局: ${c}×${r} | 共 ${photos.length} 張`;
+  document.getElementById('downloadBtn').disabled = false;
 }
 
-document.getElementById('clearBtn').onclick = () => {
-  photos = []; renderGenPreview(); updateGenLayout();
-  sortMode.value = 'old-new';
-};
+function updateGenLayout() { updateGen(); } // 兼容舊調用
+function renderGenPreview() { updateGen(); } // 兼容舊調用
 
-document.getElementById('downloadBtn').onclick = () => {
-  const {c, r} = getGrid();
-  const sorted = getSortedPhotos();
-  const gap = +gapSlider.value;
-  const radius = +radiusSlider.value;
-  const shadow = +shadowSlider.value;
-  const W = 460, H = 1020; // 單卡尺寸
+function genDownload() {
+  const gap = +document.getElementById('gap').value;
+  const radius = +document.getElementById('radius').value;
+  const shadow = +document.getElementById('shadow').value;
+  let c=3, r=2;
+  const pVal = preset.value;
+  if(pVal === 'auto') { c = Math.ceil(Math.sqrt(photos.length)); r = Math.ceil(photos.length/c); }
+  else if(pVal === 'custom') { c = +document.getElementById('cols').value; r = +document.getElementById('rows').value; }
+  else { const parts = pVal.split('x'); c = +parts[0]; r = +parts[1]; }
 
-  canvas.width = c * W + (c + 1) * gap;
-  canvas.height = r * H + (r + 1) * gap;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  sorted.slice(0, c * r).forEach((photo, i) => {
-    const col = i % c;
-    const row = Math.floor(i / c);
-    const x = gap + col * (W + gap);
-    const y = gap + row * (H + gap);
-
-    // 繪製陰影
+  const W = 460, H = 1020;
+  canvas.width = c * W + (c+1) * gap;
+  canvas.height = r * H + (r+1) * gap;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  
+  const sorted = getSorted();
+  sorted.slice(0, c*r).forEach((photo, i) => {
+    const col = i % c, row = Math.floor(i / c);
+    const x = gap + col * (W + gap), y = gap + row * (H + gap);
+    
     ctx.save();
     if(shadow > 0) {
       ctx.shadowColor = 'rgba(0,0,0,0.6)';
       ctx.shadowBlur = shadow * 2;
       ctx.shadowOffsetY = shadow;
     }
-    
-    // 圓角裁切
     ctx.beginPath();
     ctx.roundRect(x, y, W, H, radius);
     ctx.clip();
-
-    // 繪製圖片 (保持比例填滿)
+    
     const img = photo.img;
-    const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
-    const dw = img.naturalWidth * scale;
-    const dh = img.naturalHeight * scale;
-    ctx.drawImage(img, x + (W - dw)/2, y + (H - dh)/2, dw, dh);
+    const sc = Math.max(W/img.naturalWidth, H/img.naturalHeight);
+    const dw = img.naturalWidth * sc, dh = img.naturalHeight * sc;
+    ctx.drawImage(img, x+(W-dw)/2, y+(H-dh)/2, dw, dh);
     ctx.restore();
   });
-
-  canvas.toBlob(blob => {
+  
+  canvas.toBlob(b => {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `GoldSun_POGO_${new Date().getTime()}.png`;
+    a.href = URL.createObjectURL(b);
+    a.download = `POGO_Gen_${Date.now()}.png`;
     a.click();
-  }, 'image/png');
-};
+  });
+}
 
-
-// ==================== 壓縮工具邏輯 ====================
-const dropZoneComp = document.getElementById('dropZoneComp');
-const compInput = document.getElementById('compInput');
-const compResultList = document.getElementById('compResultList');
-
-dropZoneComp.ondragover = (e) => { e.preventDefault(); dropZoneComp.classList.add('drag-over'); };
-dropZoneComp.ondragleave = () => dropZoneComp.classList.remove('drag-over');
-dropZoneComp.ondrop = (e) => { 
-  e.preventDefault(); dropZoneComp.classList.remove('drag-over'); 
-  handleCompFiles(e.dataTransfer.files); 
-};
-compInput.onchange = (e) => handleCompFiles(e.target.files);
+// ==================== 2. 壓縮工具 ====================
+setupDrag('dropZoneComp', handleCompFiles);
+document.getElementById('compInput').onchange = e => handleCompFiles(e.target.files);
 
 function handleCompFiles(files) {
   [...files].forEach(file => {
-    if (!file.type.startsWith('image/')) return;
-    const itemKey = 'item-' + Math.random().toString(36).substr(2, 9);
-    addCompItemUI(file.name, itemKey);
-    processCompression(file, itemKey);
+    if(!file.type.startsWith('image/')) return;
+    const id = 'comp-'+Math.random().toString(36).substr(2,9);
+    const div = document.createElement('div');
+    div.className = 'file-item';
+    div.id = id;
+    div.innerHTML = `<div class="file-info"><strong>${file.name}</strong><span>⏳ 壓縮中...</span></div>`;
+    document.getElementById('compResultList').prepend(div);
+    processComp(file, id);
   });
 }
 
-function addCompItemUI(name, key) {
-  const div = document.createElement('div');
-  div.className = 'file-item';
-  div.id = key;
-  div.innerHTML = `
-    <div class="file-info">
-      <strong>${name}</strong>
-      <span>⏳ 正在壓縮中...</span>
-    </div>`;
-  compResultList.prepend(div);
-}
-
-async function processCompression(file, key) {
+async function processComp(file, id) {
   const img = await new Promise(r => {
     const i = new Image();
     i.onload = () => r(i);
     i.src = URL.createObjectURL(file);
   });
-
   const cvs = document.createElement('canvas');
   const cx = cvs.getContext('2d');
   cvs.width = img.width; cvs.height = img.height;
   cx.drawImage(img, 0, 0);
-
-  let quality = 0.95;
-  let dataUrl = "";
-  let mb = 0;
-  const MAX_MB = 9.9;
-
-  // 智能壓縮迴圈
+  
+  let q=0.95, mb=0, dataUrl;
   do {
-    dataUrl = cvs.toDataURL('image/jpeg', quality);
-    mb = (dataUrl.length * 0.75) / (1024 * 1024);
-    quality -= 0.1;
-  } while (mb > MAX_MB && quality > 0.1);
-
-  const orgMb = (file.size / 1024 / 1024).toFixed(2);
-  const newMb = mb.toFixed(2);
-  const save = (100 - (newMb/orgMb*100)).toFixed(1);
-
-  document.getElementById(key).innerHTML = `
-    <div class="file-info">
-      <strong>${file.name} <span class="tag tag-success">-${save}%</span></strong>
-      <span>原始: ${orgMb}MB ➝ 壓縮後: ${newMb}MB</span>
-    </div>
-    <a href="${dataUrl}" download="Min_${file.name.replace(/\.[^/.]+$/, "")}.jpg" class="btn btn-primary" style="width:auto; padding:8px 16px; font-size:14px;">下載</a>
-  `;
+    dataUrl = cvs.toDataURL('image/jpeg', q);
+    mb = dataUrl.length * 0.75 / 1024 / 1024;
+    q -= 0.1;
+  } while(mb > 9.9 && q > 0.1);
+  
+  const org = (file.size/1024/1024).toFixed(2);
+  const save = (100 - (mb/org*100)).toFixed(1);
+  document.getElementById(id).innerHTML = `
+    <div class="file-info"><strong>${file.name} <span class="tag tag-success">-${save}%</span></strong>
+    <span>${org}MB ➝ ${mb.toFixed(2)}MB</span></div>
+    <a href="${dataUrl}" download="Min_${file.name.replace(/\.[^/.]+$/, "")}.jpg" class="btn btn-primary" style="width:auto;padding:8px 16px;">下載</a>`;
 }
+
+// ==================== 3. 浮水印工具 ====================
+const wmCanvas = document.getElementById('wmCanvas');
+const wmCtx = wmCanvas.getContext('2d');
+let wmImg = new Image();
+let wmFiles = [];
+let wmSettings = {
+  text: '© GoldSun Studio', font: "'Noto Sans TC', sans-serif", size: 60,
+  color: '#ffffff', opacity: 0.7, rotate: 330,
+  tile: false, tileGap: 200, posX: 0.5, posY: 0.5
+};
+
+setupDrag('wmPreviewArea', handleWmFiles);
+document.getElementById('wmInput').onchange = e => handleWmFiles(e.target.files);
+
+function handleWmFiles(files) {
+  wmFiles = Array.from(files);
+  document.getElementById('wmCount').innerText = wmFiles.length;
+  if(wmFiles.length > 0) {
+    const r = new FileReader();
+    r.onload = e => { wmImg.src = e.target.result; };
+    r.readAsDataURL(wmFiles[0]);
+    document.getElementById('wmPlaceholder').style.display = 'none';
+    document.getElementById('wmCanvas').style.display = 'block'; // 顯示畫布
+    document.getElementById('wmBatchBtn').style.display = wmFiles.length > 1 ? 'block' : 'none';
+  }
+}
+
+wmImg.onload = wmResizeAndDraw;
+window.addEventListener('resize', () => { if(document.getElementById('view-watermark').classList.contains('active')) wmResizeAndDraw(); });
+
+['wmText','wmSize','wmOpacity','wmRotate','wmColor','wmTileGap','wmFont'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateWmSettings);
+});
+document.getElementById('wmTile').onchange = e => {
+  document.getElementById('wmTileGapControl').style.display = e.target.checked ? 'block' : 'none';
+  document.getElementById('wmPosGrid').style.opacity = e.target.checked ? '0.3' : '1';
+  document.getElementById('wmPosGrid').style.pointerEvents = e.target.checked ? 'none' : 'auto';
+  updateWmSettings();
+};
+document.querySelectorAll('#wmPosGrid .pos-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#wmPosGrid .pos-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const [x,y] = btn.dataset.pos.split(',').map(Number);
+    wmSettings.posX = x; wmSettings.posY = y;
+    wmDraw();
+  };
+});
+
+function updateWmSettings() {
+  wmSettings.text = document.getElementById('wmText').value;
+  wmSettings.font = document.getElementById('wmFont').value;
+  wmSettings.size = +document.getElementById('wmSize').value;
+  wmSettings.color = document.getElementById('wmColor').value;
+  wmSettings.opacity = +document.getElementById('wmOpacity').value / 100;
+  wmSettings.rotate = +document.getElementById('wmRotate').value;
+  wmSettings.tile = document.getElementById('wmTile').checked;
+  wmSettings.tileGap = +document.getElementById('wmTileGap').value;
+  wmDraw();
+}
+
+function wmResizeAndDraw() {
+  if(!wmImg.src) return;
+  const container = document.getElementById('wmPreviewArea');
+  const scale = Math.min((container.clientWidth-40)/wmImg.width, (container.clientHeight-40)/wmImg.height);
+  wmCanvas.width = wmImg.width * scale;
+  wmCanvas.height = wmImg.height * scale;
+  wmDraw();
+}
+
+function wmDraw() {
+  wmCtx.clearRect(0,0,wmCanvas.width,wmCanvas.height);
+  wmCtx.drawImage(wmImg, 0, 0, wmCanvas.width, wmCanvas.height);
+  wmCtx.save();
+  
+  const ratio = wmCanvas.width / wmImg.width;
+  const fs = wmSettings.size * ratio;
+  const gap = wmSettings.tileGap * ratio;
+  const rad = wmSettings.rotate * Math.PI / 180;
+  
+  wmCtx.font = `bold ${fs}px ${wmSettings.font}`;
+  wmCtx.fillStyle = wmSettings.color;
+  wmCtx.globalAlpha = wmSettings.opacity;
+  wmCtx.textAlign = 'center';
+  wmCtx.textBaseline = 'middle';
+  
+  if(wmSettings.tile) {
+    for(let x=gap/2; x<wmCanvas.width; x+=gap) {
+      for(let y=gap/2; y<wmCanvas.height; y+=gap) {
+        wmCtx.save(); wmCtx.translate(x,y); wmCtx.rotate(rad); wmCtx.fillText(wmSettings.text,0,0); wmCtx.restore();
+      }
+    }
+  } else {
+    wmCtx.translate(wmCanvas.width * wmSettings.posX, wmCanvas.height * wmSettings.posY);
+    wmCtx.rotate(rad);
+    wmCtx.fillText(wmSettings.text, 0, 0);
+  }
+  wmCtx.restore();
+}
+
+document.getElementById('wmSaveSettings').onclick = () => {
+  const s = {...wmSettings};
+  localStorage.setItem('GoldSun_WM', JSON.stringify(s));
+  alert('已保存設定');
+};
+window.addEventListener('load', () => {
+  const saved = localStorage.getItem('GoldSun_WM');
+  if(saved) {
+    Object.assign(wmSettings, JSON.parse(saved));
+    document.getElementById('wmText').value = wmSettings.text;
+    document.getElementById('wmSize').value = wmSettings.size;
+    document.getElementById('wmColor').value = wmSettings.color;
+    document.getElementById('wmOpacity').value = wmSettings.opacity*100;
+    document.getElementById('wmRotate').value = wmSettings.rotate;
+    document.getElementById('wmTile').checked = wmSettings.tile;
+    document.getElementById('wmTileGap').value = wmSettings.tileGap;
+    document.getElementById('wmFont').value = wmSettings.font;
+    const pos = `${wmSettings.posX},${wmSettings.posY}`;
+    document.querySelectorAll('#wmPosGrid .pos-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.pos === pos);
+    });
+  }
+});
+
+document.getElementById('wmDownloadBtn').onclick = () => {
+  if(!wmImg.src) return;
+  const c = document.createElement('canvas');
+  c.width = wmImg.width; c.height = wmImg.height;
+  const cx = c.getContext('2d');
+  cx.drawImage(wmImg, 0, 0);
+  
+  const rad = wmSettings.rotate * Math.PI / 180;
+  cx.font = `bold ${wmSettings.size}px ${wmSettings.font}`;
+  cx.fillStyle = wmSettings.color;
+  cx.globalAlpha = wmSettings.opacity;
+  cx.textAlign = 'center';
+  cx.textBaseline = 'middle';
+  
+  if(wmSettings.tile) {
+    for(let x=wmSettings.tileGap/2; x<c.width; x+=wmSettings.tileGap) {
+      for(let y=wmSettings.tileGap/2; y<c.height; y+=wmSettings.tileGap) {
+        cx.save(); cx.translate(x,y); cx.rotate(rad); cx.fillText(wmSettings.text,0,0); cx.restore();
+      }
+    }
+  } else {
+    cx.translate(c.width*wmSettings.posX, c.height*wmSettings.posY);
+    cx.rotate(rad);
+    cx.fillText(wmSettings.text,0,0);
+  }
+  
+  c.toBlob(b => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = `WM_${Date.now()}.jpg`;
+    a.click();
+  }, 'image/jpeg', 0.95);
+};
+
+document.getElementById('wmBatchBtn').onclick = async () => {
+  if(wmFiles.length === 0) return;
+  const zip = new JSZip();
+  const bar = document.getElementById('wmProgressBar');
+  document.getElementById('wmProgress').style.display = 'block';
+  
+  for(let i=0; i<wmFiles.length; i++) {
+    const file = wmFiles[i];
+    const blob = await new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement('canvas');
+          c.width = img.width; c.height = img.height;
+          const cx = c.getContext('2d');
+          cx.drawImage(img, 0, 0);
+          
+          const rad = wmSettings.rotate * Math.PI / 180;
+          cx.font = `bold ${wmSettings.size}px ${wmSettings.font}`;
+          cx.fillStyle = wmSettings.color;
+          cx.globalAlpha = wmSettings.opacity;
+          cx.textAlign = 'center';
+          cx.textBaseline = 'middle';
+          
+          if(wmSettings.tile) {
+            for(let x=wmSettings.tileGap/2; x<c.width; x+=wmSettings.tileGap) {
+              for(let y=wmSettings.tileGap/2; y<c.height; y+=wmSettings.tileGap) {
+                cx.save(); cx.translate(x,y); cx.rotate(rad); cx.fillText(wmSettings.text,0,0); cx.restore();
+              }
+            }
+          } else {
+            cx.translate(c.width*wmSettings.posX, c.height*wmSettings.posY);
+            cx.rotate(rad);
+            cx.fillText(wmSettings.text,0,0);
+          }
+          c.toBlob(resolve, 'image/jpeg', 0.95);
+        };
+        img.src = e.target.result;
+      };
+      r.readAsDataURL(file);
+    });
+    zip.file(`WM_${file.name}`, blob);
+    bar.style.width = ((i+1)/wmFiles.length*100) + '%';
+  }
+  
+  const content = await zip.generateAsync({type:"blob"});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(content);
+  a.download = `Batch_WM_${Date.now()}.zip`;
+  a.click();
+  document.getElementById('wmProgress').style.display = 'none';
+};
 </script>
 </body>
 </html>
