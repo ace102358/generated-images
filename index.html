@@ -2,49 +2,71 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>PokemonGO萬能展示圖生成器（時間排序 + 拖曳調整 + 強化UI）</title>
+<title>POGO萬能展示圖生成器</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  body {margin:0; padding:0 0 320px; background:#1a0033; font-family:-apple-system,system-ui,sans-serif; color:#fff;}
-  h1 {text-align:center; padding:20px 0 10px; font-size:26px;}
-  .desc {text-align:center; margin:20px auto; padding:0 15px; max-width:800px;}
-  label[for=picker] {
-    display:block; width:90%; max-width:500px; margin:20px auto;
-    padding:40px; text-align:center; font-size:30px; font-weight:bold;
-    background:linear-gradient(135deg,#cf9eff,#7b4dff); color:#000;
-    border-radius:40px; box-shadow:0 15px 40px rgba(123,77,255,0.6);
-    cursor:pointer;
-  }
-  #picker {display:none;}
-  #preview {
-    display:grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap:30px;
-    padding:20px 15px 100px;
-    max-width:1600px;
-    margin:0 auto;
+  body {
+    margin: 0;
+    padding: 0 340px 20px 20px;
+    background: #000000;
+    font-family: -apple-system, system-ui, sans-serif;
+    color: #fff;
+    min-height: 100vh;
     transition: all .2s;
   }
+
+  h1 {
+    text-align: center;
+    padding: 20px 0 10px;
+    font-size: 26px;
+  }
+
+  .desc {
+    text-align: center;
+    margin: 20px auto;
+    padding: 0 15px;
+    max-width: 800px;
+  }
+
+  #picker { display: none; }
+
+  #preview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    padding: 20px 20px 100px 0;
+    max-width: 1400px;
+    margin: 0 auto;
+    transition: all .2s;
+  }
+
   .thumb {
     aspect-ratio: 0.466;
-    border-radius:36px;
-    overflow:hidden;
-    box-shadow:0 20px 50px rgba(0,0,0,0.8);
+    border-radius: 36px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
     transition: all .15s ease;
     cursor: grab;
     user-select: none;
     position: relative;
   }
-  .thumb:active {cursor: grabbing;}
-  .thumb img {width:100%; height:100%; object-fit:cover; transition: all .2s;}
 
-  /* 拖拽中圖片強化 */
+  .thumb:active { cursor: grabbing; }
+
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: all .2s;
+  }
+
   .thumb.dragging {
     opacity: 0.75;
     transform: scale(1.08) rotate(2deg);
-    box-shadow: 0 30px 70px rgba(0,0,0,0.9), 0 0 0 4px #bb86fc inset;
+    box-shadow: 0 30px 70px rgba(59,130,246,0.88), 0 0 0 4px #bb86fc inset;
     z-index: 100;
   }
+
   .thumb.dragging::after {
     content: "拖拽中";
     position: absolute;
@@ -62,45 +84,186 @@
     z-index: 10;
   }
 
-  /* 拖拽目標位置高亮 */
   .thumb.drag-over {
     border: 3px dashed #bb86fc;
-    background: rgba(187, 134, 252, 0.15);
-    box-shadow: 0 0 25px rgba(187, 134, 252, 0.7);
+    background: rgba(59,130,246,0.88);
+    box-shadow: 0 0 25px rgba(59,130,246,0.88);
     transform: scale(1.05);
   }
 
-  /* 拖拽期間其他圖片變暗 */
   .dragging-active .thumb:not(.dragging) {
     opacity: 0.55;
     filter: brightness(0.75);
   }
 
+  /* ==================== 全頁拖拽提示 ==================== */
+  body.drag-over {
+    border: 6px dashed #bb86fc;
+    background: rgba(187, 134, 252, 0.12);
+  }
+  body.drag-over::before {
+    content: "放開滑鼠以新增圖片 📤";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 36px;
+    font-weight: bold;
+    color: #bb86fc;
+    text-shadow: 0 0 30px rgba(0,0,0,0.9);
+    pointer-events: none;
+    z-index: 9999;
+    background: rgba(26,0,51,0.85);
+    padding: 24px 48px;
+    border-radius: 30px;
+    white-space: nowrap;
+  }
+
+  /* 右側控制欄 */
   .controls {
-    position:fixed; left:0; right:0; bottom:0; padding:20px;
-    background:rgba(26,0,51,0.98); backdrop-filter:blur(20px);
-    border-top:1px solid rgba(255,255,255,0.1);
-    text-align:center; z-index:1000;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 320px;
+    padding: 20px 16px;
+    background: rgba(26, 0, 51, 0.95);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255,255,255,0.12);
+    overflow-y: auto;
+    z-index: 1000;
+    text-align: left;
   }
-  .controls select, .controls input, button {
-    padding:12px 20px; margin:6px 4px; border-radius:40px; border:none; font-size:17px;
+
+  .controls h3 {
+    margin: 0 0 16px;
+    font-size: 18px;
+    opacity: 0.9;
   }
-  .controls select, .controls input {background:#333; color:#fff;}
-  .controls button {background:#bb86fc; color:#000; font-weight:bold;}
-  .slider {margin:12px 16px; font-size:16px;}
-  input[type=range] {width:150px;}
-  canvas {display:block; max-width:100%; margin:40px auto; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.6);}
+
+  .controls > div {
+    margin: 20px 0;
+  }
+
+  #uploadBtn {
+    width: 100%;
+    padding: 18px 16px;
+    margin: 8px 0 24px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, #cf9eff, #7b4dff);
+    color: #000;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(123,77,255,0.4);
+    transition: all .2s;
+  }
+
+  #uploadBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(123,77,255,0.5);
+  }
+
+  #uploadBtn small {
+    display: block;
+    font-size: 13px;
+    font-weight: normal;
+    margin-top: 4px;
+    opacity: 0.9;
+  }
+
+  .controls select,
+  .controls input:not([type="range"]),
+  .controls button {
+    width: 100%;
+    padding: 12px 16px;
+    margin: 8px 0;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  .controls select,
+  .controls input:not([type="range"]) {
+    background: #2a1a44;
+    color: #fff;
+  }
+
+  .controls button {
+    background: #bb86fc;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .controls .slider {
+    display: block;
+    margin: 16px 0;
+    font-size: 15px;
+  }
+
+  .controls input[type=range] {
+    width: 100%;
+  }
+
+  .controls #info {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-top: 20px;
+    line-height: 1.4;
+  }
+
+  canvas {
+    display: block;
+    max-width: 100%;
+    margin: 40px auto;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  }
+
+  /* 手機窄螢幕適配 */
+  @media (max-width: 800px) {
+    body {
+      padding: 0 0 380px 0;
+    }
+    .controls {
+      position: fixed;
+      right: 0;
+      left: 0;
+      top: auto;
+      bottom: 0;
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      border-left: none;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 16px;
+    }
+    #preview {
+      padding: 20px 15px 400px;
+    }
+  }
 </style>
 </head>
-<body>
-<h1>PokemonGO萬能展示圖生成器（時間排序 + 拖曳調整 + 強化UI）By金昇工作室</h1>
-<p class="desc">支援 1×1 到 10×10 任意格數｜透明背景一鍵下載｜時間排序＋拖曳手動調整（強化視覺反饋）</p>
-<label for="picker">點擊上傳寶可夢截圖<br><small style="font-size:20px;">可一次選很多張，之後可拖曳調整順序</small></label>
-<input type="file" id="picker" multiple accept="image/*">
+<body id="dropZone">
+
+<h1>POGO展示圖生成器By金昇工作室</h1>
+<p class="desc">支援 1×1 到 10×10 任意格數｜時間排序</p>
+
 <div id="preview"></div>
+
 <div class="controls">
-  <div style="margin:10px 0;">
-    <span style="font-size:18px;">排列方式：</span><br>
+  <h3>📤 上傳圖片</h3>
+  <button id="uploadBtn">
+    點擊上傳寶可夢截圖
+    <small>可多選</small>
+  </button>
+
+  <h3>排列與排序</h3>
+  <div>
+    <label>排列方式</label><br>
     <select id="preset">
       <option value="auto">自動排列</option>
       <option value="3x2">3×2（6隻橫向）</option>
@@ -111,13 +274,15 @@
       <option value="6x6">6×6（36隻）</option>
       <option value="custom">自訂格數 →</option>
     </select>
-    <input type="number" id="cols" min="1" max="10" value="3" style="display:none;">
-    <span id="x" style="display:none;">×</span>
-    <input type="number" id="rows" min="1" max="10" value="2" style="display:none;">
+    <div style="margin:12px 0;">
+      <input type="number" id="cols" min="1" max="10" value="3" style="display:none; width:80px;">
+      <span id="x" style="display:none; margin:0 8px;">×</span>
+      <input type="number" id="rows" min="1" max="10" value="2" style="display:none; width:80px;">
+    </div>
   </div>
-  
-  <div style="margin:10px 0;">
-    <span style="font-size:18px;">排序方式：</span><br>
+
+  <div>
+    <label>排序方式</label><br>
     <select id="sortMode">
       <option value="upload">上傳順序</option>
       <option value="old-new" selected>時間順序（舊→新）</option>
@@ -126,16 +291,19 @@
     </select>
   </div>
 
-  <div>
-    <span class="slider">間距 <input type="range" id="gap" min="0" max="120" value="40"><b id="g">40px</b></span>
-    <span class="slider">圓角 <input type="range" id="radius" min="0" max="100" value="36"><b id="r">36px</b></span>
-    <span class="slider">陰影 <input type="range" id="shadow" min="0" max="80" value="40"><b id="s">40px</b></span>
-  </div>
-  <br><br>
+  <h3>視覺調整</h3>
+  <div class="slider">間距　<input type="range" id="gap" min="0" max="120" value="0"><b id="g">0px</b></div>
+  <div class="slider">圓角　<input type="range" id="radius" min="0" max="100" value="0"><b id="r">0px</b></div>
+  <div class="slider">陰影　<input type="range" id="shadow" min="0" max="80" value="0"><b id="s">0px</b></div>
+
+  <h3>操作</h3>
   <button id="clear">清空全部</button>
   <button id="download" disabled>生成透明背景大圖</button>
-  <div style="margin-top:10px; font-size:14px; opacity:0.8;" id="info"></div>
+  
+  <div id="info" style="margin-top:24px;"></div>
 </div>
+
+<input type="file" id="picker" multiple accept="image/*">
 <canvas id="canvas"></canvas>
 
 <script>
@@ -144,16 +312,48 @@ const preview = document.getElementById('preview');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 let photos = [];
-
 const preset = document.getElementById('preset');
 const colsIn = document.getElementById('cols');
 const rowsIn = document.getElementById('rows');
 const xSpan = document.getElementById('x');
 const sortMode = document.getElementById('sortMode');
-
 let draggedItem = null;
 
-// 預設選單切換
+// ==================== 右側上傳按鈕 ====================
+const uploadBtn = document.getElementById('uploadBtn');
+uploadBtn.onclick = () => picker.click();
+
+// ==================== 全頁拖拽上傳（新增功能） ====================
+const dropZone = document.getElementById('dropZone');
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+
+  const files = e.dataTransfer.files;
+  if (!files || files.length === 0) return;
+
+  [...files].forEach(file => {
+    if (!file.type.startsWith('image/')) return;
+    const img = new Image();
+    img.onload = () => {
+      photos.push({ img, timestamp: file.lastModified });
+      renderPreview();
+      updateLayout();
+    };
+    img.src = URL.createObjectURL(file);
+  });
+});
+
 preset.onchange = () => {
   if (preset.value === 'custom') {
     colsIn.style.display = rowsIn.style.display = xSpan.style.display = 'inline-block';
@@ -190,7 +390,7 @@ function getSortedPhotos() {
 function renderPreview() {
   preview.innerHTML = '';
   const sorted = getSortedPhotos();
-  
+
   if (draggedItem) preview.classList.add('dragging-active');
   else preview.classList.remove('dragging-active');
 
@@ -212,7 +412,6 @@ function renderPreview() {
       document.querySelectorAll('.thumb').forEach(t => t.classList.remove('drag-over'));
       draggedItem = null;
       preview.classList.remove('dragging-active');
-
       sortMode.value = 'manual';
       sortMode.querySelector('option[value="manual"]').disabled = false;
     });
@@ -228,16 +427,19 @@ function renderPreview() {
       div.classList.remove('drag-over');
     });
 
+    // ==================== 關鍵修改：避免與全頁檔案拖拽衝突 ====================
     div.addEventListener('drop', (e) => {
+      // 如果是拖入新圖片檔案，就讓 body 的 drop 處理
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        return;
+      }
+      // 否則執行原本的重新排序邏輯
       e.preventDefault();
       if (draggedItem === div) return;
-
       const fromIndex = parseInt(draggedItem.dataset.index);
       const toIndex = parseInt(div.dataset.index);
-
       const [moved] = photos.splice(fromIndex, 1);
       photos.splice(toIndex, 0, moved);
-
       renderPreview();
       updateLayout();
     });
@@ -279,9 +481,10 @@ function updateLayout() {
   document.getElementById('download').disabled = photos.length === 0;
 }
 
-const gapSlider = document.getElementById('gap');
+const gapSlider    = document.getElementById('gap');
 const radiusSlider = document.getElementById('radius');
 const shadowSlider = document.getElementById('shadow');
+
 gapSlider.oninput = radiusSlider.oninput = shadowSlider.oninput = updateLayout;
 colsIn.oninput = rowsIn.oninput = updateLayout;
 
@@ -304,11 +507,12 @@ document.getElementById('download').onclick = () => {
   const shadow = +shadowSlider.value;
   const {cols, rows} = getGrid();
   const totalCells = cols * rows;
-
   const W = 460;
   const H = 1020;
+
   canvas.width = cols * W + (cols + 1) * gap;
   canvas.height = rows * H + (rows + 1) * gap;
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   photos.slice(0, totalCells).forEach((photo, i) => {
@@ -336,6 +540,7 @@ document.getElementById('download').onclick = () => {
     const scale = Math.max(W / img.naturalWidth, H / img.naturalHeight);
     const dw = img.naturalWidth * scale;
     const dh = img.naturalHeight * scale;
+
     ctx.drawImage(img, x + (W - dw)/2, y + (H - dh)/2, dw, dh);
     ctx.restore();
   });
