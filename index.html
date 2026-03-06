@@ -2,10 +2,10 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>帳號圖產生器（支援時間排序）</title>
+<title>PokemonGO萬能展示圖生成器（時間排序 + 拖曳調整 + 強化UI）</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  body {margin:0; padding:0 0 280px; background:#1a0033; font-family:-apple-system,system-ui,sans-serif; color:#fff;}
+  body {margin:0; padding:0 0 320px; background:#1a0033; font-family:-apple-system,system-ui,sans-serif; color:#fff;}
   h1 {text-align:center; padding:20px 0 10px; font-size:26px;}
   .desc {text-align:center; margin:20px auto; padding:0 15px; max-width:800px;}
   label[for=picker] {
@@ -23,15 +23,59 @@
     padding:20px 15px 100px;
     max-width:1600px;
     margin:0 auto;
+    transition: all .2s;
   }
   .thumb {
     aspect-ratio: 0.466;
     border-radius:36px;
     overflow:hidden;
     box-shadow:0 20px 50px rgba(0,0,0,0.8);
-    transition:all .2s;
+    transition: all .15s ease;
+    cursor: grab;
+    user-select: none;
+    position: relative;
   }
-  .thumb img {width:100%; height:100%; object-fit:cover;}
+  .thumb:active {cursor: grabbing;}
+  .thumb img {width:100%; height:100%; object-fit:cover; transition: all .2s;}
+
+  /* 拖拽中圖片強化 */
+  .thumb.dragging {
+    opacity: 0.75;
+    transform: scale(1.08) rotate(2deg);
+    box-shadow: 0 30px 70px rgba(0,0,0,0.9), 0 0 0 4px #bb86fc inset;
+    z-index: 100;
+  }
+  .thumb.dragging::after {
+    content: "拖拽中";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* 拖拽目標位置高亮 */
+  .thumb.drag-over {
+    border: 3px dashed #bb86fc;
+    background: rgba(187, 134, 252, 0.15);
+    box-shadow: 0 0 25px rgba(187, 134, 252, 0.7);
+    transform: scale(1.05);
+  }
+
+  /* 拖拽期間其他圖片變暗 */
+  .dragging-active .thumb:not(.dragging) {
+    opacity: 0.55;
+    filter: brightness(0.75);
+  }
+
   .controls {
     position:fixed; left:0; right:0; bottom:0; padding:20px;
     background:rgba(26,0,51,0.98); backdrop-filter:blur(20px);
@@ -41,7 +85,7 @@
   .controls select, .controls input, button {
     padding:12px 20px; margin:6px 4px; border-radius:40px; border:none; font-size:17px;
   }
-  .controls select, .controls input {background:#333; color:#fff; width:80px;}
+  .controls select, .controls input {background:#333; color:#fff;}
   .controls button {background:#bb86fc; color:#000; font-weight:bold;}
   .slider {margin:12px 16px; font-size:16px;}
   input[type=range] {width:150px;}
@@ -49,9 +93,9 @@
 </style>
 </head>
 <body>
-<h1>PokemonGO萬能展示圖生成器（支援時間排序）By金昇工作室</h1>
-<p class="desc">支援 1×1 到 10×10 任意格數｜透明背景一鍵下載｜新增時間排序功能</p>
-<label for="picker">點擊上傳寶可夢截圖<br><small style="font-size:20px;">可一次選很多張</small></label>
+<h1>PokemonGO萬能展示圖生成器（時間排序 + 拖曳調整 + 強化UI）By金昇工作室</h1>
+<p class="desc">支援 1×1 到 10×10 任意格數｜透明背景一鍵下載｜時間排序＋拖曳手動調整（強化視覺反饋）</p>
+<label for="picker">點擊上傳寶可夢截圖<br><small style="font-size:20px;">可一次選很多張，之後可拖曳調整順序</small></label>
 <input type="file" id="picker" multiple accept="image/*">
 <div id="preview"></div>
 <div class="controls">
@@ -72,13 +116,13 @@
     <input type="number" id="rows" min="1" max="10" value="2" style="display:none;">
   </div>
   
-  <!-- 新增：排序方式 -->
   <div style="margin:10px 0;">
     <span style="font-size:18px;">排序方式：</span><br>
     <select id="sortMode">
       <option value="upload">上傳順序</option>
       <option value="old-new" selected>時間順序（舊→新）</option>
       <option value="new-old">時間順序（新→舊）</option>
+      <option value="manual" disabled>手動調整中（拖曳後自動切換）</option>
     </select>
   </div>
 
@@ -99,7 +143,7 @@ const picker = document.getElementById('picker');
 const preview = document.getElementById('preview');
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-let photos = []; // 改用物件陣列 {img, timestamp}
+let photos = [];
 
 const preset = document.getElementById('preset');
 const colsIn = document.getElementById('cols');
@@ -107,7 +151,9 @@ const rowsIn = document.getElementById('rows');
 const xSpan = document.getElementById('x');
 const sortMode = document.getElementById('sortMode');
 
-// —— 預設選單切換 ——
+let draggedItem = null;
+
+// 預設選單切換
 preset.onchange = () => {
   if (preset.value === 'custom') {
     colsIn.style.display = rowsIn.style.display = xSpan.style.display = 'inline-block';
@@ -121,7 +167,6 @@ preset.onchange = () => {
   updateLayout();
 };
 
-// —— 取得目前要用的格數 ——
 function getGrid() {
   if (preset.value === 'auto') {
     const n = photos.length;
@@ -135,43 +180,85 @@ function getGrid() {
   return {cols:c, rows:r};
 }
 
-// —— 排序並重新渲染預覽縮圖 ——
-function sortAndRenderPreview() {
+function getSortedPhotos() {
   let sorted = [...photos];
-  if (sortMode.value === 'old-new') {
-    sorted.sort((a, b) => a.timestamp - b.timestamp);
-  } else if (sortMode.value === 'new-old') {
-    sorted.sort((a, b) => b.timestamp - a.timestamp);
-  }
-  // 上傳順序就不排序
+  if (sortMode.value === 'old-new') sorted.sort((a,b)=>a.timestamp-b.timestamp);
+  else if (sortMode.value === 'new-old') sorted.sort((a,b)=>b.timestamp-a.timestamp);
+  return sorted;
+}
 
+function renderPreview() {
   preview.innerHTML = '';
-  sorted.forEach(photo => {
+  const sorted = getSortedPhotos();
+  
+  if (draggedItem) preview.classList.add('dragging-active');
+  else preview.classList.remove('dragging-active');
+
+  sorted.forEach((photo, index) => {
     const div = document.createElement('div');
-    div.className = "thumb";
+    div.className = 'thumb';
+    div.draggable = true;
+    div.dataset.index = index;
     div.innerHTML = `<img src="${photo.img.src}">`;
+
+    div.addEventListener('dragstart', (e) => {
+      draggedItem = div;
+      setTimeout(() => div.classList.add('dragging'), 0);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    div.addEventListener('dragend', () => {
+      div.classList.remove('dragging');
+      document.querySelectorAll('.thumb').forEach(t => t.classList.remove('drag-over'));
+      draggedItem = null;
+      preview.classList.remove('dragging-active');
+
+      sortMode.value = 'manual';
+      sortMode.querySelector('option[value="manual"]').disabled = false;
+    });
+
+    div.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (draggedItem === div) return;
+      document.querySelectorAll('.thumb').forEach(t => t.classList.remove('drag-over'));
+      div.classList.add('drag-over');
+    });
+
+    div.addEventListener('dragleave', () => {
+      div.classList.remove('drag-over');
+    });
+
+    div.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (draggedItem === div) return;
+
+      const fromIndex = parseInt(draggedItem.dataset.index);
+      const toIndex = parseInt(div.dataset.index);
+
+      const [moved] = photos.splice(fromIndex, 1);
+      photos.splice(toIndex, 0, moved);
+
+      renderPreview();
+      updateLayout();
+    });
+
     preview.appendChild(div);
   });
 }
 
-// —— 上傳圖片 ——
 picker.onchange = e => {
   [...e.target.files].forEach(file => {
     if (!file.type.startsWith('image/')) return;
     const img = new Image();
     img.onload = () => {
-      photos.push({
-        img: img,
-        timestamp: file.lastModified
-      });
-      sortAndRenderPreview();   // 上傳完立刻按照目前排序規則排列
+      photos.push({ img, timestamp: file.lastModified });
+      renderPreview();
       updateLayout();
     };
     img.src = URL.createObjectURL(file);
   });
 };
 
-// —— 更新預覽與資訊 ——
 function updateLayout() {
   const {cols} = getGrid();
   preview.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
@@ -188,8 +275,7 @@ function updateLayout() {
 
   const {cols:gc, rows:gr} = getGrid();
   const total = gc * gr;
-  document.getElementById('info').textContent =
-    `即將生成 ${gc}×${gr} = ${total} 格（使用前 ${Math.min(photos.length, total)} 張）`;
+  document.getElementById('info').textContent = `即將生成 ${gc}×${gr} = ${total} 格（使用前 ${Math.min(photos.length, total)} 張）`;
   document.getElementById('download').disabled = photos.length === 0;
 }
 
@@ -199,19 +285,19 @@ const shadowSlider = document.getElementById('shadow');
 gapSlider.oninput = radiusSlider.oninput = shadowSlider.oninput = updateLayout;
 colsIn.oninput = rowsIn.oninput = updateLayout;
 
-// 新增：排序方式改變時立即重排
 sortMode.onchange = () => {
-  sortAndRenderPreview();
+  if (sortMode.value !== 'manual') renderPreview();
   updateLayout();
 };
 
 document.getElementById('clear').onclick = () => {
   photos = [];
   preview.innerHTML = '';
+  sortMode.value = 'old-new';
+  sortMode.querySelector('option[value="manual"]').disabled = true;
   updateLayout();
 };
 
-// —— 點擊「生成」——
 document.getElementById('download').onclick = () => {
   const gap = +gapSlider.value;
   const radius = +radiusSlider.value;
@@ -219,18 +305,13 @@ document.getElementById('download').onclick = () => {
   const {cols, rows} = getGrid();
   const totalCells = cols * rows;
 
-  // 先按照目前排序方式取得最終順序
-  let sortedPhotos = [...photos];
-  if (sortMode.value === 'old-new') sortedPhotos.sort((a,b)=>a.timestamp-b.timestamp);
-  else if (sortMode.value === 'new-old') sortedPhotos.sort((a,b)=>b.timestamp-a.timestamp);
-
   const W = 460;
   const H = 1020;
   canvas.width = cols * W + (cols + 1) * gap;
   canvas.height = rows * H + (rows + 1) * gap;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  sortedPhotos.slice(0, totalCells).forEach((photo, i) => {
+  photos.slice(0, totalCells).forEach((photo, i) => {
     const img = photo.img;
     const col = i % cols;
     const row = Math.floor(i / cols);
