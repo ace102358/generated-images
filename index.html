@@ -10,14 +10,12 @@
 
 <style>
   /* ==================== 引入額外中文字體 ==================== */
-  /* jf open 粉圓 */
   @font-face {
     font-family: 'jf-openhuninn';
     src: url('https://cdn.jsdelivr.net/gh/marsnow/open-huninn-web-font@1.1/font/jf-openhuninn.woff2') format('woff2'),
          url('https://cdn.jsdelivr.net/gh/marsnow/open-huninn-web-font@1.1/font/jf-openhuninn.woff') format('woff');
     font-display: swap;
   }
-  /* 台北黑體 (Taipei Sans TC) */
   @font-face {
     font-family: 'Taipei Sans TC Beta';
     src: url('https://cdn.jsdelivr.net/gh/roberthsu2003/Taipei-Sans-TC/TaipeiSansTCBeta-Regular.ttf') format('truetype');
@@ -100,13 +98,11 @@
     box-shadow: 0 0 30px var(--primary-glow) inset;
   }
   
-  /* 空狀態提示 */
   #genEmptyState { text-align: center; pointer-events: none; }
   
-  /* 生成器網格 */
   #previewGrid {
     display: grid; width: 100%; padding: 20px; gap: 20px;
-    align-content: start; /* 防止高度撐開 */
+    align-content: start; 
   }
 
   .thumb {
@@ -135,7 +131,6 @@
   .control-group { margin-bottom: 20px; }
   label { display: block; margin-bottom: 8px; font-size: 13px; color: #ddd; }
 
-  /* 輸入元件 */
   select, input[type="text"], input[type="number"] {
     width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border);
     color: #fff; padding: 12px; border-radius: 10px; font-size: 14px; outline: none;
@@ -157,6 +152,7 @@
   .btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
   .btn-secondary:hover { background: rgba(255,255,255,0.2); }
   .btn-danger { background: rgba(255, 82, 82, 0.2); color: #ff8080; }
+  .btn-success { background: rgba(3, 218, 198, 0.2); color: #03dac6; } /* 新增保存按鈕樣式 */
   .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); box-shadow: none; }
 
   input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; }
@@ -189,7 +185,7 @@
     display: flex; justify-content: space-between; align-items: center;
   }
 
-  /* ==================== 手機適配 (底部抽屜) ==================== */
+  /* ==================== 手機適配 ==================== */
   @media (max-width: 900px) {
     .layout-grid { grid-template-columns: 1fr; }
     #previewGrid { grid-template-columns: repeat(2, 1fr); padding-bottom: 100px; }
@@ -197,7 +193,7 @@
     .controls-panel {
       position: fixed; bottom: 0; left: 0; right: 0; top: auto;
       border-radius: 24px 24px 0 0; margin: 0;
-      transform: translateY(calc(100% - 65px)); /* 預設收起 */
+      transform: translateY(calc(100% - 65px));
       transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
       z-index: 1000; border-bottom: none;
     }
@@ -213,7 +209,7 @@
 <body>
 
 <header>
-  <div class="brand">POGO TOOLS</div>
+  <div class="brand">POGO TOOLBOX</div>
   <div class="tabs">
     <button class="tab-btn active" onclick="app.switchTab('gen')">展示圖</button>
     <button class="tab-btn" onclick="app.switchTab('comp')">壓縮</button>
@@ -292,7 +288,7 @@
       <div style="text-align:center; pointer-events:none;">
         <div style="font-size: 48px; margin-bottom: 16px;">⚡</div>
         <h3>點擊或拖拽圖片進行壓縮</h3>
-        <p style="color:#888;">自動壓至 9.9MB 以下 (Discord/8591 專用)</p>
+        <p style="color:#888;">自動壓至 9.9MB 以下 (Discord/Line 專用)</p>
       </div>
     </div>
     <div id="compList" style="margin-top:20px;"></div>
@@ -334,9 +330,9 @@
 
       <h3>樣式調整</h3>
       <div class="control-group">
-        <div class="slider-row"><span>大小</span><input type="range" id="wmSize" min="10" max="300" value="60" oninput="app.wm.draw()"></div>
-        <div class="slider-row"><span>透明</span><input type="range" id="wmOpacity" min="0" max="100" value="70" oninput="app.wm.draw()"></div>
-        <div class="slider-row"><span>旋轉</span><input type="range" id="wmRotate" min="0" max="360" value="330" oninput="app.wm.draw()"></div>
+        <div class="slider-row"><span>大小</span><input type="range" id="wmSize" min="10" max="400" value="60" oninput="app.wm.draw()"></div>
+        <div class="slider-row"><span>透明</span><input type="range" id="wmOpacity" min="0" max="100" value="100" oninput="app.wm.draw()"></div>
+        <div class="slider-row"><span>旋轉</span><input type="range" id="wmRotate" min="0" max="360" value="360" oninput="app.wm.draw()"></div>
         <div class="slider-row"><span>顏色</span><input type="color" id="wmColor" value="#ffffff" oninput="app.wm.draw()" style="height:30px; width:50px;"></div>
       </div>
 
@@ -361,9 +357,10 @@
         </div>
       </div>
 
-      <div style="display:flex; gap:10px; margin-top:20px;">
-        <button class="btn btn-secondary" onclick="app.wm.downloadSingle()">下載</button>
-        <button class="btn btn-primary" id="wmBatchBtn" onclick="app.wm.downloadBatch()" disabled>📦 ZIP 打包</button>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
+        <button class="btn btn-success" onclick="app.wm.saveSettings()">💾 保存設定</button>
+        <button class="btn btn-secondary" onclick="app.wm.downloadSingle()">下載預覽</button>
+        <button class="btn btn-primary" id="wmBatchBtn" onclick="app.wm.downloadBatch()" style="grid-column: span 2;" disabled>📦 批量 ZIP 打包</button>
       </div>
       <div id="wmProgress" style="height:3px; background:#333; margin-top:10px; border-radius:2px; overflow:hidden; display:none;">
         <div id="wmProgressBar" style="width:0; height:100%; background:var(--primary);"></div>
@@ -388,7 +385,7 @@ const app = {
     if(id === 'wm' && app.wm.img.src) app.wm.draw();
   },
 
-  // 萬能拖拽綁定
+  // 萬能拖拽
   setupDrag: (zoneId, callback) => {
     const el = document.getElementById(zoneId);
     ['dragenter','dragover','dragleave','drop'].forEach(e => {
@@ -402,46 +399,36 @@ const app = {
     });
   },
 
-  // ==================== 模組 1: 生成器 ====================
+  // ==================== 1. 生成器 ====================
   gen: {
-    photos: [],
-    draggedIdx: null,
-    
+    photos: [], draggedIdx: null, layoutCache: {},
     init: () => {
       app.setupDrag('genDropZone', app.gen.handleFiles);
       document.getElementById('genInput').onchange = e => app.gen.handleFiles(e.target.files);
     },
-
     handleFiles: (files) => {
       [...files].forEach(file => {
         if(!file.type.startsWith('image/')) return;
         const img = new Image();
-        img.onload = () => {
-          app.gen.photos.push({img, ts: file.lastModified});
-          app.gen.sortAndRender();
-        };
+        img.onload = () => { app.gen.photos.push({img, ts: file.lastModified}); app.gen.sortAndRender(); };
         img.src = URL.createObjectURL(file);
       });
       document.getElementById('genDropZone').classList.remove('empty');
       document.getElementById('genEmptyState').style.display = 'none';
     },
-
     sortAndRender: () => {
       const mode = document.getElementById('genSort').value;
       if(mode === 'old-new') app.gen.photos.sort((a,b) => a.ts - b.ts);
       else if(mode === 'new-old') app.gen.photos.sort((a,b) => b.ts - a.ts);
       app.gen.render();
     },
-
     render: () => {
       const grid = document.getElementById('previewGrid');
       grid.innerHTML = '';
       app.gen.photos.forEach((p, idx) => {
         const div = document.createElement('div');
-        div.className = 'thumb';
-        div.draggable = true;
+        div.className = 'thumb'; div.draggable = true;
         div.innerHTML = `<img src="${p.img.src}">`;
-        
         div.ondragstart = () => { app.gen.draggedIdx = idx; div.classList.add('dragging'); };
         div.ondragend = () => div.classList.remove('dragging');
         div.ondragover = e => { e.preventDefault(); div.classList.add('drag-over'); };
@@ -449,56 +436,39 @@ const app = {
         div.ondrop = e => {
           e.preventDefault(); e.stopPropagation();
           const from = app.gen.draggedIdx;
-          const to = idx;
           const [moved] = app.gen.photos.splice(from, 1);
-          app.gen.photos.splice(to, 0, moved);
-          
+          app.gen.photos.splice(idx, 0, moved);
           const sortSelect = document.getElementById('genSort');
-          sortSelect.value = 'manual'; 
-          sortSelect.querySelector('option[value="manual"]').disabled = false;
-          
+          sortSelect.value = 'manual'; sortSelect.querySelector('option[value="manual"]').disabled = false;
           app.gen.render();
         };
         grid.appendChild(div);
       });
       app.gen.updateLayout();
     },
-
     updateLayout: () => {
       const preset = document.getElementById('genPreset').value;
       const count = app.gen.photos.length;
       let c=3, r=2;
-
       document.getElementById('genCustomInput').style.display = preset === 'custom' ? 'flex' : 'none';
-
-      if(preset === 'auto') {
-        c = Math.ceil(Math.sqrt(count)) || 3;
-        r = Math.ceil(count/c) || 2;
-      } else if(preset === 'custom') {
-        c = +document.getElementById('genCol').value || 3;
-        r = +document.getElementById('genRow').value || 2;
-      } else {
-        [c, r] = preset.split('x').map(Number);
-      }
-
+      if(preset === 'auto') { c = Math.ceil(Math.sqrt(count)) || 3; r = Math.ceil(count/c) || 2; }
+      else if(preset === 'custom') { c = +document.getElementById('genCol').value || 3; r = +document.getElementById('genRow').value || 2; }
+      else { [c, r] = preset.split('x').map(Number); }
+      
       const grid = document.getElementById('previewGrid');
       const gap = document.getElementById('genGap').value;
       const rad = document.getElementById('genRadius').value;
       const shadow = document.getElementById('genShadow').value;
-
       grid.style.gridTemplateColumns = `repeat(${c}, 1fr)`;
       grid.style.gap = `${gap}px`;
-      
       document.querySelectorAll('.thumb').forEach(t => {
         t.style.borderRadius = `${rad}px`;
         t.style.boxShadow = `0 ${shadow/2}px ${shadow}px rgba(0,0,0,0.6)`;
       });
-
       document.getElementById('genInfo').innerText = `佈局: ${c}×${r} | 圖片: ${count} 張`;
       document.getElementById('genDownBtn').disabled = count === 0;
       app.gen.layoutCache = {c, r, gap: +gap, rad: +rad, shadow: +shadow};
     },
-
     clear: () => {
       app.gen.photos = [];
       document.getElementById('previewGrid').innerHTML = '';
@@ -506,41 +476,31 @@ const app = {
       document.getElementById('genDropZone').classList.add('empty');
       app.gen.updateLayout();
     },
-
     download: () => {
       const {c, r, gap, rad, shadow} = app.gen.layoutCache;
       const cvs = document.getElementById('genCanvas');
       const ctx = cvs.getContext('2d');
       const W = 460, H = 1020; 
-
       cvs.width = c * W + (c+1) * gap;
       cvs.height = r * H + (r+1) * gap;
       ctx.clearRect(0,0,cvs.width, cvs.height);
-
       app.gen.photos.slice(0, c*r).forEach((p, i) => {
         const col = i % c, row = Math.floor(i / c);
         const x = gap + col * (W + gap);
         const y = gap + row * (H + gap);
-
         ctx.save();
         if(shadow > 0) {
           ctx.shadowColor = 'rgba(0,0,0,0.8)';
           ctx.shadowBlur = shadow * 2;
           ctx.shadowOffsetY = shadow;
         }
-        
-        ctx.beginPath();
-        ctx.roundRect(x, y, W, H, rad);
-        ctx.clip();
-
+        ctx.beginPath(); ctx.roundRect(x, y, W, H, rad); ctx.clip();
         const img = p.img;
         const scale = Math.max(W/img.naturalWidth, H/img.naturalHeight);
-        const dw = img.naturalWidth * scale;
-        const dh = img.naturalHeight * scale;
+        const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
         ctx.drawImage(img, x+(W-dw)/2, y+(H-dh)/2, dw, dh);
         ctx.restore();
       });
-
       cvs.toBlob(blob => {
         const link = document.createElement('a');
         link.download = `POGO_Grid_${Date.now()}.png`;
@@ -550,24 +510,21 @@ const app = {
     }
   },
 
-  // ==================== 模組 2: 壓縮工具 ====================
+  // ==================== 2. 壓縮工具 ====================
   comp: {
     init: () => {
       app.setupDrag('compDropZone', app.comp.process);
       document.getElementById('compInput').onchange = e => app.comp.process(e.target.files);
     },
-
     process: (files) => {
       document.getElementById('compDropZone').classList.remove('empty');
       [...files].forEach(file => {
         if(!file.type.startsWith('image/')) return;
         const id = Math.random().toString(36).substr(2,9);
         const div = document.createElement('div');
-        div.className = 'file-item';
-        div.id = id;
+        div.className = 'file-item'; div.id = id;
         div.innerHTML = `<div><strong>${file.name}</strong></div><div>⏳</div>`;
         document.getElementById('compList').prepend(div);
-
         const reader = new FileReader();
         reader.onload = e => {
           const img = new Image();
@@ -576,24 +533,15 @@ const app = {
             const ctx = cvs.getContext('2d');
             cvs.width = img.width; cvs.height = img.height;
             ctx.drawImage(img, 0, 0);
-
             let q = 0.95, mb = 0, dataUrl;
             do {
               dataUrl = cvs.toDataURL('image/jpeg', q);
               mb = dataUrl.length * 0.75 / 1024 / 1024;
               q -= 0.1;
             } while(mb > 9.9 && q > 0.1);
-
             const org = (file.size/1024/1024).toFixed(2);
             const save = (100 - (mb/org*100)).toFixed(1);
-            
-            div.innerHTML = `
-              <div>
-                <strong>${file.name}</strong> <span class="tag">-${save}%</span><br>
-                <span style="font-size:12px; color:#aaa;">${org}MB ➝ ${mb.toFixed(2)}MB</span>
-              </div>
-              <a href="${dataUrl}" download="Min_${file.name.split('.')[0]}.jpg" class="btn btn-primary" style="width:auto; padding:6px 12px; font-size:12px;">下載</a>
-            `;
+            div.innerHTML = `<div><strong>${file.name}</strong> <span class="tag">-${save}%</span><br><span style="font-size:12px; color:#aaa;">${org}MB ➝ ${mb.toFixed(2)}MB</span></div><a href="${dataUrl}" download="Min_${file.name.split('.')[0]}.jpg" class="btn btn-primary" style="width:auto; padding:6px 12px; font-size:12px;">下載</a>`;
           };
           img.src = e.target.result;
         };
@@ -602,22 +550,18 @@ const app = {
     }
   },
 
-  // ==================== 模組 3: 浮水印 Pro ====================
+  // ==================== 3. 浮水印 Pro (含儲存功能) ====================
   wm: {
-    img: new Image(),
-    files: [],
-    settings: { x:0.5, y:0.5 },
-
+    img: new Image(), files: [], settings: { x:0.5, y:0.5 },
     init: () => {
       app.setupDrag('wmPreviewBox', app.wm.handleFiles);
       document.getElementById('wmInput').onchange = e => app.wm.handleFiles(e.target.files);
+      app.wm.loadSettings(); // 啟動時自動載入設定
     },
-
     handleFiles: (files) => {
       app.wm.files = Array.from(files);
       document.getElementById('wmCount').innerText = app.wm.files.length;
       document.getElementById('wmBatchBtn').disabled = app.wm.files.length < 2;
-      
       if(app.wm.files.length > 0) {
         const reader = new FileReader();
         reader.onload = e => {
@@ -631,7 +575,44 @@ const app = {
         reader.readAsDataURL(app.wm.files[0]);
       }
     },
-
+    saveSettings: () => {
+      const s = {
+        text: document.getElementById('wmText').value,
+        font: document.getElementById('wmFont').value,
+        size: document.getElementById('wmSize').value,
+        opacity: document.getElementById('wmOpacity').value,
+        rotate: document.getElementById('wmRotate').value,
+        color: document.getElementById('wmColor').value,
+        tile: document.getElementById('wmTile').checked,
+        tileGap: document.getElementById('wmTileGap').value,
+        x: app.wm.settings.x,
+        y: app.wm.settings.y
+      };
+      localStorage.setItem('GoldSun_WM_Settings', JSON.stringify(s));
+      alert('✅ 設定已保存！下次開啟會自動載入。');
+    },
+    loadSettings: () => {
+      const saved = localStorage.getItem('GoldSun_WM_Settings');
+      if(saved) {
+        const s = JSON.parse(saved);
+        document.getElementById('wmText').value = s.text;
+        document.getElementById('wmFont').value = s.font;
+        document.getElementById('wmSize').value = s.size;
+        document.getElementById('wmOpacity').value = s.opacity;
+        document.getElementById('wmRotate').value = s.rotate;
+        document.getElementById('wmColor').value = s.color;
+        document.getElementById('wmTile').checked = s.tile;
+        document.getElementById('wmTileGap').value = s.tileGap;
+        app.wm.settings.x = s.x;
+        app.wm.settings.y = s.y;
+        
+        // 更新 UI 狀態
+        app.wm.toggleMode(); 
+        document.querySelectorAll('.pos-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.pos === `${s.x},${s.y}`);
+        });
+      }
+    },
     toggleMode: () => {
       const tile = document.getElementById('wmTile').checked;
       document.getElementById('wmTileControls').style.display = tile ? 'block' : 'none';
@@ -639,27 +620,22 @@ const app = {
       document.getElementById('wmPosGrid').style.pointerEvents = tile ? 'none' : 'auto';
       app.wm.draw();
     },
-
     setPos: (x, y, btn) => {
-      app.wm.settings.x = x;
-      app.wm.settings.y = y;
+      app.wm.settings.x = x; app.wm.settings.y = y;
       document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       app.wm.draw();
     },
-
     draw: () => {
       if(!app.wm.img.src) return;
       const cvs = document.getElementById('wmCanvas');
       const ctx = cvs.getContext('2d');
       const box = document.getElementById('wmPreviewBox');
-
       const scale = Math.min((box.clientWidth-40)/app.wm.img.width, (box.clientHeight-40)/app.wm.img.height);
       cvs.width = app.wm.img.width * scale;
       cvs.height = app.wm.img.height * scale;
-      
       ctx.drawImage(app.wm.img, 0, 0, cvs.width, cvs.height);
-
+      
       const text = document.getElementById('wmText').value;
       const font = document.getElementById('wmFont').value;
       const size = +document.getElementById('wmSize').value;
@@ -671,39 +647,28 @@ const app = {
       ctx.save();
       const ratio = cvs.width / app.wm.img.width;
       const finalSize = size * ratio;
-      
       ctx.font = `bold ${finalSize}px ${font}`;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = opacity;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = color; ctx.globalAlpha = opacity;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
       if(isTile) {
         const gap = +document.getElementById('wmTileGap').value * ratio;
         for(let x=0; x<cvs.width; x+=gap) {
           for(let y=0; y<cvs.height; y+=gap) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(rotate);
-            ctx.fillText(text, 0, 0);
-            ctx.restore();
+            ctx.save(); ctx.translate(x, y); ctx.rotate(rotate); ctx.fillText(text, 0, 0); ctx.restore();
           }
         }
       } else {
         const {x, y} = app.wm.settings;
         ctx.translate(cvs.width * x, cvs.height * y);
-        ctx.rotate(rotate);
-        ctx.fillText(text, 0, 0);
+        ctx.rotate(rotate); ctx.fillText(text, 0, 0);
       }
       ctx.restore();
     },
-
     processImage: (imgObj) => {
       const cvs = document.createElement('canvas');
       const ctx = cvs.getContext('2d');
-      cvs.width = imgObj.width;
-      cvs.height = imgObj.height;
-      
+      cvs.width = imgObj.width; cvs.height = imgObj.height;
       ctx.drawImage(imgObj, 0, 0);
       
       const text = document.getElementById('wmText').value;
@@ -716,32 +681,24 @@ const app = {
 
       ctx.save();
       ctx.font = `bold ${size}px ${font}`;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = opacity;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = color; ctx.globalAlpha = opacity;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
       if(isTile) {
         const gap = +document.getElementById('wmTileGap').value;
         for(let x=0; x<cvs.width; x+=gap) {
           for(let y=0; y<cvs.height; y+=gap) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(rotate);
-            ctx.fillText(text, 0, 0);
-            ctx.restore();
+            ctx.save(); ctx.translate(x, y); ctx.rotate(rotate); ctx.fillText(text, 0, 0); ctx.restore();
           }
         }
       } else {
         const {x, y} = app.wm.settings;
         ctx.translate(cvs.width * x, cvs.height * y);
-        ctx.rotate(rotate);
-        ctx.fillText(text, 0, 0);
+        ctx.rotate(rotate); ctx.fillText(text, 0, 0);
       }
       ctx.restore();
       return cvs;
     },
-
     downloadSingle: () => {
       if(!app.wm.img.src) return;
       const cvs = app.wm.processImage(app.wm.img);
@@ -750,12 +707,10 @@ const app = {
       link.href = cvs.toDataURL('image/jpeg', 0.95);
       link.click();
     },
-
     downloadBatch: async () => {
       const zip = new JSZip();
       const progress = document.getElementById('wmProgressBar');
       document.getElementById('wmProgress').style.display = 'block';
-
       for(let i=0; i<app.wm.files.length; i++) {
         const file = app.wm.files[i];
         const img = await new Promise(r => {
@@ -763,13 +718,11 @@ const app = {
           image.onload = () => r(image);
           image.src = URL.createObjectURL(file);
         });
-        
         const cvs = app.wm.processImage(img);
         const blob = await new Promise(r => cvs.toBlob(r, 'image/jpeg', 0.95));
         zip.file(`WM_${file.name}`, blob);
         progress.style.width = `${((i+1)/app.wm.files.length)*100}%`;
       }
-
       const content = await zip.generateAsync({type:"blob"});
       const link = document.createElement('a');
       link.download = `Batch_WM_${Date.now()}.zip`;
@@ -780,7 +733,6 @@ const app = {
   }
 };
 
-// 啟動
 app.gen.init();
 app.comp.init();
 app.wm.init();
