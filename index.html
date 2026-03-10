@@ -147,8 +147,27 @@
   .btn-success { background: rgba(3, 218, 198, 0.2); color: #03dac6; }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); box-shadow: none; }
 
-  input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; }
-  .slider-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 13px; color: #ccc; }
+  /* ==================== 100分細節：控制條與微調按鈕 ==================== */
+  input[type=range] { accent-color: var(--primary); cursor: pointer; margin: 0; }
+  .slider-row { 
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-bottom: 12px; font-size: 13px; color: #ccc; gap: 10px; 
+  }
+  .slider-row > span { min-width: 45px; white-space: nowrap; }
+  
+  .slider-control { 
+    display: flex; align-items: center; gap: 8px; flex: 1; 
+  }
+  .slider-control input[type=range] { flex: 1; width: 100%; }
+  
+  .step-btn { 
+    background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; 
+    width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; line-height: 1; font-weight: bold; transition: 0.2s; padding: 0; flex-shrink: 0;
+  }
+  .step-btn:hover { background: rgba(255,255,255,0.2); border-color: var(--primary); color: var(--primary); }
+  .step-btn:active { transform: scale(0.9); }
 
   /* ==================== 浮水印 & 壓縮 & 標註 ==================== */
   #wmPreviewBox {
@@ -160,7 +179,6 @@
   #wmCanvas { max-width: 100%; max-height: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
   #wmPlaceholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #666; width: 100%; pointer-events: none; }
 
-  /* 放大鏡選取框 */
   .magSelectorRing {
     position: absolute; border: 3px solid transparent; border-radius: 50%; cursor: grab; z-index: 10;
   }
@@ -168,17 +186,6 @@
   .magSelectorRing::before { top: 50%; left: 15%; right: 15%; height: 2px; transform: translateY(-50%); }
   .magSelectorRing::after { left: 50%; top: 15%; bottom: 15%; width: 2px; transform: translateX(-50%); }
   .magSelectorRing:active { cursor: grabbing; }
-
-  /* [新增] 貼紙選取框 (用於拖曳) */
-  .stickerSelector {
-    position: absolute;
-    border: 2px dashed rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.1);
-    cursor: grab; z-index: 10;
-    border-radius: 8px;
-    transform: translate(-50%, -50%);
-  }
-  .stickerSelector:active { cursor: grabbing; border-color: var(--primary); background: rgba(187, 134, 252, 0.2); }
 
   .pos-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
   .pos-btn { padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; text-align: center; cursor: pointer; font-size: 12px; transition: 0.2s; }
@@ -257,11 +264,33 @@
           <option value="manual" disabled>👆 手動拖拽中</option>
         </select>
       </div>
+      
       <h3>視覺微調</h3>
       <div class="control-group">
-        <div class="slider-row"><span>間距</span><input type="range" id="genGap" max="100" value="0" oninput="app.gen.updateLayout()"></div>
-        <div class="slider-row"><span>圓角</span><input type="range" id="genRadius" max="100" value="0" oninput="app.gen.updateLayout()"></div>
-        <div class="slider-row"><span>陰影</span><input type="range" id="genShadow" max="80" value="0" oninput="app.gen.updateLayout()"></div>
+        <div class="slider-row">
+          <span>間距</span>
+          <div class="slider-control">
+            <button class="step-btn" onclick="app.adjustSlider('genGap', -1)">-</button>
+            <input type="range" id="genGap" min="0" max="100" value="0" oninput="app.gen.updateLayout()">
+            <button class="step-btn" onclick="app.adjustSlider('genGap', 1)">+</button>
+          </div>
+        </div>
+        <div class="slider-row">
+          <span>圓角</span>
+          <div class="slider-control">
+            <button class="step-btn" onclick="app.adjustSlider('genRadius', -1)">-</button>
+            <input type="range" id="genRadius" min="0" max="100" value="0" oninput="app.gen.updateLayout()">
+            <button class="step-btn" onclick="app.adjustSlider('genRadius', 1)">+</button>
+          </div>
+        </div>
+        <div class="slider-row">
+          <span>陰影</span>
+          <div class="slider-control">
+            <button class="step-btn" onclick="app.adjustSlider('genShadow', -1)">-</button>
+            <input type="range" id="genShadow" min="0" max="80" value="0" oninput="app.gen.updateLayout()">
+            <button class="step-btn" onclick="app.adjustSlider('genShadow', 1)">+</button>
+          </div>
+        </div>
       </div>
       <div style="display:flex; gap:10px;">
         <button class="btn btn-danger" onclick="app.gen.clear()">清空</button>
@@ -293,7 +322,6 @@
         <p style="color:#888; font-size:13px;">點擊或拖拽至此</p>
       </div>
       <canvas id="wmCanvas" style="display:none;"></canvas>
-      
       <div id="wmInteractContainer"></div>
     </div>
 
@@ -318,25 +346,20 @@
           </div>
           <div class="slider-row">
             <span>放大倍率</span>
-            <input type="range" id="wmMagZoom" min="1.5" max="5" step="0.5" value="2.5" style="width: 60%;" oninput="app.wm.draw()">
+            <div class="slider-control">
+              <button class="step-btn" onclick="app.adjustSlider('wmMagZoom', -1)">-</button>
+              <input type="range" id="wmMagZoom" min="1.5" max="5" step="0.5" value="2.5" oninput="app.wm.draw()">
+              <button class="step-btn" onclick="app.adjustSlider('wmMagZoom', 1)">+</button>
+            </div>
           </div>
-          <div class="slider-row">
+          <div class="slider-row" style="margin-bottom:0;">
             <span>圓圈大小</span>
-            <input type="range" id="wmMagSize" min="50" max="250" step="10" value="120" style="width: 60%;" oninput="app.wm.renderInteractives()">
+            <div class="slider-control">
+              <button class="step-btn" onclick="app.adjustSlider('wmMagSize', -1)">-</button>
+              <input type="range" id="wmMagSize" min="50" max="250" step="10" value="120" oninput="app.wm.renderInteractives()">
+              <button class="step-btn" onclick="app.adjustSlider('wmMagSize', 1)">+</button>
+            </div>
           </div>
-        </div>
-      </div>
-
-      <h3>🏷️ 標籤貼紙</h3>
-      <div class="control-group" style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 12px;">
-        <div style="display:flex; flex-direction:column; gap:8px;">
-           <button class="btn btn-secondary" onclick="app.wm.addSticker('mega')" style="background: rgba(0, 200, 83, 0.2); color: #00e676; border: 1px solid #00e676;">
-             ➕ 加入「Mega」貼紙
-           </button>
-           <button class="btn btn-secondary" onclick="app.wm.addSticker('nomega')" style="background: rgba(255, 61, 0, 0.2); color: #ff3d00; border: 1px solid #ff3d00;">
-             ➕ 加入「不能 Mega」貼紙
-           </button>
-           <button class="btn btn-danger" onclick="app.wm.clearStickers()" style="padding: 8px; font-size: 13px; margin-top: 5px;">🗑️ 清除所有貼紙</button>
         </div>
       </div>
 
@@ -359,13 +382,41 @@
       <details style="margin-bottom:20px; background: rgba(0,0,0,0.2); padding:10px; border-radius:10px;">
           <summary style="cursor:pointer; color:#aaa; font-size:13px;">展開主浮水印進階設定 (大小/透明度/位置)</summary>
           <div style="margin-top: 15px;">
-              <div class="slider-row"><span>大小</span><input type="range" id="wmSize" min="10" max="400" value="60" oninput="app.wm.draw()"></div>
-              <div class="slider-row"><span>透明</span><input type="range" id="wmOpacity" min="0" max="100" value="100" oninput="app.wm.draw()"></div>
-              <div class="slider-row"><span>旋轉</span><input type="range" id="wmRotate" min="0" max="360" value="360" oninput="app.wm.draw()"></div>
+              <div class="slider-row">
+                <span>大小</span>
+                <div class="slider-control">
+                  <button class="step-btn" onclick="app.adjustSlider('wmSize', -1)">-</button>
+                  <input type="range" id="wmSize" min="10" max="400" value="60" oninput="app.wm.draw()">
+                  <button class="step-btn" onclick="app.adjustSlider('wmSize', 1)">+</button>
+                </div>
+              </div>
+              <div class="slider-row">
+                <span>透明</span>
+                <div class="slider-control">
+                  <button class="step-btn" onclick="app.adjustSlider('wmOpacity', -1)">-</button>
+                  <input type="range" id="wmOpacity" min="0" max="100" value="100" oninput="app.wm.draw()">
+                  <button class="step-btn" onclick="app.adjustSlider('wmOpacity', 1)">+</button>
+                </div>
+              </div>
+              <div class="slider-row">
+                <span>旋轉</span>
+                <div class="slider-control">
+                  <button class="step-btn" onclick="app.adjustSlider('wmRotate', -1)">-</button>
+                  <input type="range" id="wmRotate" min="0" max="360" value="360" oninput="app.wm.draw()">
+                  <button class="step-btn" onclick="app.adjustSlider('wmRotate', 1)">+</button>
+                </div>
+              </div>
               
               <label style="margin-top:15px;"><input type="checkbox" id="wmTile" onchange="app.wm.toggleMode()"> 啟用平鋪模式</label>
               <div id="wmTileControls" style="display:none;">
-                 <div class="slider-row"><span>間距</span><input type="range" id="wmTileGap" min="50" max="500" value="200" oninput="app.wm.draw()"></div>
+                 <div class="slider-row">
+                   <span>間距</span>
+                   <div class="slider-control">
+                     <button class="step-btn" onclick="app.adjustSlider('wmTileGap', -1)">-</button>
+                     <input type="range" id="wmTileGap" min="50" max="500" value="200" oninput="app.wm.draw()">
+                     <button class="step-btn" onclick="app.adjustSlider('wmTileGap', 1)">+</button>
+                   </div>
+                 </div>
               </div>
               <div id="wmPosGrid" class="pos-grid">
                 <div class="pos-btn" onclick="app.wm.setPos(0.1,0.1,this)">↖</div>
@@ -397,7 +448,11 @@
         </div>
         <div class="slider-row" style="margin-bottom:0;">
             <span>大小</span>
-            <input type="range" id="wmSubSize" min="10" max="200" value="40" style="width: 70%;" oninput="app.wm.draw()">
+            <div class="slider-control">
+              <button class="step-btn" onclick="app.adjustSlider('wmSubSize', -1)">-</button>
+              <input type="range" id="wmSubSize" min="10" max="200" value="40" oninput="app.wm.draw()">
+              <button class="step-btn" onclick="app.adjustSlider('wmSubSize', 1)">+</button>
+            </div>
         </div>
       </div>
 
@@ -420,6 +475,26 @@
 
 <script>
 const app = {
+  adjustSlider: (id, delta) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    
+    const step = parseFloat(el.step) || 1;
+    const min = el.min !== "" ? parseFloat(el.min) : 0;
+    const max = el.max !== "" ? parseFloat(el.max) : 100;
+    
+    let val = parseFloat(el.value);
+    val += delta * step;
+    
+    if(val < min) val = min;
+    if(val > max) val = max;
+    
+    const decimals = (step.toString().split('.')[1] || '').length;
+    el.value = val.toFixed(decimals);
+    
+    el.dispatchEvent(new Event('input'));
+  },
+
   switchTab: (id) => {
     document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
     document.getElementById(`view-${id}`).classList.add('active');
@@ -447,7 +522,7 @@ const app = {
     });
   },
 
-  gen: { /* 省略，與前版相同 */
+  gen: { 
     photos: [], draggedIdx: null, layoutCache: {},
     init: () => {
       app.setupDrag('genDropZone', app.gen.handleFiles);
@@ -556,7 +631,7 @@ const app = {
     }
   },
 
-  comp: { /* 省略，與前版相同 */
+  comp: { 
     init: () => {
       app.setupDrag('compDropZone', app.comp.process);
       document.getElementById('compInput').onchange = e => app.comp.process(e.target.files);
@@ -595,23 +670,10 @@ const app = {
     }
   },
 
-  // ==================== 3. 浮水印 Pro ====================
   wm: {
-    img: new Image(), 
-    files: [], 
-    settings: { x:0.5, y:0.5 }, 
-    
-    // 放大鏡狀態
-    mags: [], 
-    isMagModeOn: false, 
-    
-    // [新增] 貼紙狀態陣列
-    stickers: [], // 格式: {type: 'mega'|'nomega', x: 0.5, y: 0.5}
-    
-    // 拖曳狀態追蹤
-    draggedType: null, // 'mag' 或 'sticker'
-    draggedIdx: -1, 
-    isDrawing: false,
+    img: new Image(), files: [], settings: { x:0.5, y:0.5 }, 
+    mags: [], isMagModeOn: false, 
+    draggedIdx: -1, isDrawing: false,
 
     init: () => {
       app.setupDrag('wmPreviewBox', app.wm.handleFiles);
@@ -622,13 +684,7 @@ const app = {
       
       const startDrag = (e) => {
           if(!app.wm.img.src) return;
-          // 判斷點擊的是放大鏡還是貼紙
           if(e.target.classList.contains('magSelectorRing')) {
-              app.wm.draggedType = 'mag';
-              app.wm.draggedIdx = parseInt(e.target.dataset.idx);
-              e.preventDefault();
-          } else if(e.target.classList.contains('stickerSelector')) {
-              app.wm.draggedType = 'sticker';
               app.wm.draggedIdx = parseInt(e.target.dataset.idx);
               e.preventDefault();
           }
@@ -648,13 +704,8 @@ const app = {
           let x = Math.max(0, Math.min(1, (clientX - cvsRect.left) / cvsRect.width));
           let y = Math.max(0, Math.min(1, (clientY - cvsRect.top) / cvsRect.height));
           
-          if(app.wm.draggedType === 'mag') {
-              app.wm.mags[app.wm.draggedIdx].x = x;
-              app.wm.mags[app.wm.draggedIdx].y = y;
-          } else if(app.wm.draggedType === 'sticker') {
-              app.wm.stickers[app.wm.draggedIdx].x = x;
-              app.wm.stickers[app.wm.draggedIdx].y = y;
-          }
+          app.wm.mags[app.wm.draggedIdx].x = x;
+          app.wm.mags[app.wm.draggedIdx].y = y;
           
           app.wm.updateInteractivesPositions(); 
 
@@ -669,21 +720,16 @@ const app = {
       document.addEventListener('mousemove', doDrag);
       document.addEventListener('touchmove', doDrag, {passive: false});
 
-      const endDrag = () => {
-          app.wm.draggedType = null;
-          app.wm.draggedIdx = -1;
-      };
+      const endDrag = () => { app.wm.draggedIdx = -1; };
       document.addEventListener('mouseup', endDrag);
       document.addEventListener('touchend', endDrag);
     },
     
-    // [修改] 統一渲染所有交互元素 (放大鏡 + 貼紙)
     renderInteractives: () => {
         const container = document.getElementById('wmInteractContainer');
         container.innerHTML = '';
         if(!app.wm.img.src) return;
 
-        // 渲染放大鏡選取框
         if(app.wm.isMagModeOn) {
             const size = document.getElementById('wmMagSize').value;
             app.wm.mags.forEach((mag, idx) => {
@@ -696,22 +742,10 @@ const app = {
             });
         }
         
-        // 渲染貼紙選取框
-        app.wm.stickers.forEach((sticker, idx) => {
-            const el = document.createElement('div');
-            el.className = 'stickerSelector';
-            el.dataset.idx = idx;
-            // 根據類型給定大概的寬高以供拖曳
-            el.style.width = (sticker.type === 'mega' ? '120px' : '150px');
-            el.style.height = '40px';
-            container.appendChild(el);
-        });
-
         app.wm.updateInteractivesPositions();
         app.wm.draw();
     },
 
-    // 放大鏡操作
     addMag: () => {
         const offsetX = (Math.random() * 0.1) - 0.05;
         const offsetY = (Math.random() * 0.1) - 0.05;
@@ -726,21 +760,11 @@ const app = {
       app.wm.renderInteractives();
     },
 
-    // [新增] 貼紙操作
-    addSticker: (type) => {
-        const offsetX = (Math.random() * 0.1) - 0.05;
-        app.wm.stickers.push({type: type, x: 0.5 + offsetX, y: 0.7}); // 預設放在偏下方
-        app.wm.renderInteractives();
-    },
-    clearStickers: () => { app.wm.stickers = []; app.wm.renderInteractives(); },
-
-    // [修改] 更新所有元素位置
     updateInteractivesPositions: () => {
       const cvs = document.getElementById('wmCanvas');
       const cvsRect = cvs.getBoundingClientRect(); 
       const boxRect = document.getElementById('wmPreviewBox').getBoundingClientRect();
 
-      // 更新放大鏡
       document.querySelectorAll('.magSelectorRing').forEach(ring => {
           const idx = parseInt(ring.dataset.idx);
           const mag = app.wm.mags[idx];
@@ -750,18 +774,6 @@ const app = {
               ring.style.left = centerX + 'px';
               ring.style.top = centerY + 'px';
               ring.style.transform = 'translate(-50%, -50%)';
-          }
-      });
-      
-      // 更新貼紙
-      document.querySelectorAll('.stickerSelector').forEach(el => {
-          const idx = parseInt(el.dataset.idx);
-          const sticker = app.wm.stickers[idx];
-          if(sticker) {
-              const centerX = (cvsRect.left - boxRect.left) + cvsRect.width * sticker.x;
-              const centerY = (cvsRect.top - boxRect.top) + cvsRect.height * sticker.y;
-              el.style.left = centerX + 'px';
-              el.style.top = centerY + 'px';
           }
       });
     },
@@ -778,7 +790,7 @@ const app = {
              document.getElementById('wmPlaceholder').style.display = 'none';
              document.getElementById('wmCanvas').style.display = 'block';
              app.wm.resizeCanvas();
-             app.wm.renderInteractives(); // 重新渲染包含貼紙的選取框
+             app.wm.renderInteractives(); 
              app.wm.draw();
           }
         };
@@ -799,7 +811,6 @@ const app = {
 
     saveSettings: () => {
       const s = {
-        // 主浮水印
         text: document.getElementById('wmText').value,
         enableText: document.getElementById('wmEnableText').checked,
         font: document.getElementById('wmFont').value,
@@ -811,33 +822,24 @@ const app = {
         y: app.wm.settings.y,
         tile: document.getElementById('wmTile').checked,
         tileGap: document.getElementById('wmTileGap').value,
-        
-        // 次要浮水印 (右下角)
         subEnable: document.getElementById('wmSubEnable').checked,
         subText: document.getElementById('wmSubText').value,
         subFont: document.getElementById('wmSubFont').value,
         subColor: document.getElementById('wmSubColor').value,
         subSize: document.getElementById('wmSubSize').value,
-        
-        // 放大鏡
         mag: document.getElementById('wmEnableMag').checked,         
         magZoom: document.getElementById('wmMagZoom').value,         
         magSize: document.getElementById('wmMagSize').value,         
-        mags: app.wm.mags,
-        
-        // 貼紙
-        stickers: app.wm.stickers
+        mags: app.wm.mags
       };
-      localStorage.setItem('GoldSun_WM_Settings_v5', JSON.stringify(s));
+      localStorage.setItem('GoldSun_WM_Settings_v7', JSON.stringify(s));
       alert('✅ 設定已保存！');
     },
 
     loadSettings: () => {
-      const saved = localStorage.getItem('GoldSun_WM_Settings_v5');
+      const saved = localStorage.getItem('GoldSun_WM_Settings_v7');
       if(saved) {
         const s = JSON.parse(saved);
-        
-        // 主浮水印
         document.getElementById('wmText').value = s.text || '';
         if(s.enableText !== undefined) document.getElementById('wmEnableText').checked = s.enableText;
         document.getElementById('wmFont').value = s.font || "'Noto Sans TC'";
@@ -850,14 +852,12 @@ const app = {
         if(s.tile !== undefined) document.getElementById('wmTile').checked = s.tile;
         document.getElementById('wmTileGap').value = s.tileGap || 200;
         
-        // 次要浮水印
         if(s.subEnable !== undefined) document.getElementById('wmSubEnable').checked = s.subEnable;
         document.getElementById('wmSubText').value = s.subText || '';
         document.getElementById('wmSubFont').value = s.subFont || "'Inter', sans-serif";
         document.getElementById('wmSubColor').value = s.subColor || '#ffcc00';
         document.getElementById('wmSubSize').value = s.subSize || 40;
 
-        // 放大鏡
         app.wm.mags = s.mags || [];
         if(s.mag !== undefined) {
            document.getElementById('wmEnableMag').checked = s.mag;
@@ -865,9 +865,6 @@ const app = {
            document.getElementById('wmMagSize').value = s.magSize || 120;
            app.wm.toggleMagnifierMode();
         }
-        
-        // 貼紙
-        app.wm.stickers = s.stickers || [];
         
         app.wm.toggleMode(); 
         document.querySelectorAll('.pos-btn').forEach(b => {
@@ -890,7 +887,6 @@ const app = {
       app.wm.draw();
     },
     
-    // ================= 核心繪圖邏輯 =================
     draw: () => {
       if(!app.wm.img.src) return;
       const cvs = document.getElementById('wmCanvas');
@@ -900,26 +896,11 @@ const app = {
       const W = cvs.width;
       const H = cvs.height;
 
-      // 1. 繪製底圖
       ctx.drawImage(app.wm.img, 0, 0);
       
-      // 2. 繪製主浮水印文字 (可平鋪/自訂位置)
-      if(document.getElementById('wmEnableText').checked) {
-          app.wm.drawMainWatermark(ctx, W, H);
-      }
-      
-      // 3. [新增] 繪製次要浮水印 (固定右下角)
-      if(document.getElementById('wmSubEnable').checked) {
-          app.wm.drawSubWatermark(ctx, W, H);
-      }
-      
-      // 4. [新增] 繪製貼紙
-      app.wm.drawStickers(ctx, W, H);
-
-      // 5. 實時繪製放大鏡標註 (放在最後面，確保放大鏡能照到浮水印跟貼紙)
-      if(app.wm.isMagModeOn) {
-          app.wm.drawMagnifiers(ctx, W, H);
-      }
+      if(document.getElementById('wmEnableText').checked) app.wm.drawMainWatermark(ctx, W, H);
+      if(document.getElementById('wmSubEnable').checked) app.wm.drawSubWatermark(ctx, W, H);
+      if(app.wm.isMagModeOn) app.wm.drawMagnifiers(ctx, W, H);
       
       app.wm.updateInteractivesPositions();
     },
@@ -955,11 +936,9 @@ const app = {
       ctx.restore();
     },
 
-    // [新增] 繪製次要浮水印
     drawSubWatermark: (ctx, W, H) => {
       const text = document.getElementById('wmSubText').value;
       if(!text) return;
-      
       const font = document.getElementById('wmSubFont').value;
       const size = +document.getElementById('wmSubSize').value;
       const color = document.getElementById('wmSubColor').value;
@@ -970,86 +949,18 @@ const app = {
       ctx.font = `bold ${finalSize}px ${font}`;
       ctx.fillStyle = color;
       
-      // 加上些微的黑色陰影增加辨識度
       ctx.shadowColor = "rgba(0,0,0,0.8)";
       ctx.shadowBlur = 4 * ratio;
       ctx.shadowOffsetX = 2 * ratio;
       ctx.shadowOffsetY = 2 * ratio;
 
-      // 固定對齊右下角
       ctx.textAlign = 'right'; 
       ctx.textBaseline = 'bottom';
       
-      // 設定右下角邊距 (例如距離邊緣 3% 寬度的距離)
       const paddingX = W * 0.03;
       const paddingY = H * 0.02;
-      
       ctx.fillText(text, W - paddingX, H - paddingY);
       ctx.restore();
-    },
-
-    // [新增] 繪製貼紙
-    drawStickers: (ctx, W, H) => {
-        app.wm.stickers.forEach(sticker => {
-            const cx = W * sticker.x;
-            const cy = H * sticker.y;
-            
-            ctx.save();
-            ctx.translate(cx, cy);
-            
-            // 貼紙大小根據圖片寬度等比縮放
-            const scale = W / 1000; 
-            ctx.scale(scale, scale);
-            
-            // 繪製貼紙外觀 (模仿標籤樣式)
-            const paddingX = 20;
-            const paddingY = 10;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.font = "bold 28px 'Bebas Neue', 'Noto Sans TC', sans-serif";
-            
-            let text = "";
-            let bgColor = "";
-            let borderColor = "";
-            let textColor = "#ffffff";
-            
-            if(sticker.type === 'mega') {
-                text = "MEGA";
-                bgColor = "rgba(0, 200, 83, 0.9)"; // 亮綠色
-                borderColor = "#00e676";
-            } else if(sticker.type === 'nomega') {
-                text = "NO MEGA";
-                bgColor = "rgba(255, 61, 0, 0.9)"; // 亮紅色
-                borderColor = "#ff3d00";
-            }
-            
-            const textMetrics = ctx.measureText(text);
-            const w = textMetrics.width + paddingX * 2;
-            const h = 40 + paddingY * 2;
-            
-            // 陰影
-            ctx.shadowColor = "rgba(0,0,0,0.5)";
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetY = 4;
-            
-            // 畫背景框
-            ctx.beginPath();
-            ctx.roundRect(-w/2, -h/2, w, h, 8); // 8px 圓角
-            ctx.fillStyle = bgColor;
-            ctx.fill();
-            
-            // 畫邊框
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = borderColor;
-            ctx.stroke();
-            
-            // 關閉陰影畫文字
-            ctx.shadowColor = "transparent";
-            ctx.fillStyle = textColor;
-            ctx.fillText(text, 0, 0);
-            
-            ctx.restore();
-        });
     },
 
     drawMagnifiers: (ctx, W, H) => {
@@ -1070,58 +981,38 @@ const app = {
             const cy = H * mag.y;
 
             ctx.save();
-
             ctx.beginPath();
             ctx.arc(cx, cy, magRadius, 0, Math.PI * 2);
-            ctx.shadowColor = "rgba(0,0,0,0.5)";
-            ctx.shadowBlur = 15 * visualRatio;
-            ctx.shadowOffsetY = 4 * visualRatio;
-            ctx.lineWidth = 4 * visualRatio;
-            ctx.strokeStyle = "#ff3b30"; 
-            ctx.stroke();
-
+            ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 15 * visualRatio; ctx.shadowOffsetY = 4 * visualRatio;
+            ctx.lineWidth = 4 * visualRatio; ctx.strokeStyle = "#ff3b30"; ctx.stroke();
             ctx.clip();
 
-            const sW = magDiameter / zoom;
-            const sH = magDiameter / zoom;
-            const sX = cx - sW / 2;
-            const sY = cy - sH / 2;
+            const sW = magDiameter / zoom; const sH = magDiameter / zoom;
+            const sX = cx - sW / 2; const sY = cy - sH / 2;
             
-            // 注意：這裡繪製的是畫布本身的內容 (包含已經畫上去的浮水印跟貼紙)，而非原始圖片！
-            // 這是一個非常酷的技巧，讓放大鏡可以連同浮水印一起放大。
             ctx.drawImage(document.getElementById('wmCanvas'), sX, sY, sW, sH, cx - magRadius, cy - magRadius, magDiameter, magDiameter);
-            
             ctx.restore(); 
         });
     },
 
-    // 用於下載和批量處理的圖像生成函數
     processImage: (imgObj) => {
       const cvs = document.createElement('canvas');
       const ctx = cvs.getContext('2d');
       cvs.width = imgObj.width; cvs.height = imgObj.height;
-      const W = cvs.width;
-      const H = cvs.height;
+      const W = cvs.width; const H = cvs.height;
 
-      // 1. 底圖
       ctx.drawImage(imgObj, 0, 0);
-      
-      // 為了重複使用 draw 函數內的邏輯，暫存全域變數
+      const originalImg = app.wm.img;
+      app.wm.img = imgObj;
+
       const originalCvs = document.getElementById('wmCanvas');
-      // 將 DOM 中的 Canvas 暫時替換成我們用於輸出的這個虛擬 Canvas
-      // 這樣 drawWatermarkText 等函數抓取 Canvas 尺寸時才會正確
       const tempId = 'temp_canvas_' + Date.now();
       cvs.id = tempId;
-      document.body.appendChild(cvs); // 暫時放入 DOM 以便內部函數取用 (如果有的話)
+      document.body.appendChild(cvs); 
 
-      // 2. 主水印
       if(document.getElementById('wmEnableText').checked) app.wm.drawMainWatermark(ctx, W, H);
-      // 3. 次要水印
       if(document.getElementById('wmSubEnable').checked) app.wm.drawSubWatermark(ctx, W, H);
-      // 4. 貼紙
-      app.wm.drawStickers(ctx, W, H);
       
-      // 5. 放大鏡 (修改傳入虛擬 Canvas 進行擷取)
       if(app.wm.isMagModeOn) {
           const zoom = parseFloat(document.getElementById('wmMagZoom').value);
           const baseSize = parseFloat(document.getElementById('wmMagSize').value);
@@ -1133,8 +1024,7 @@ const app = {
           const visualRatio = W / domWidth;
 
           app.wm.mags.forEach(mag => {
-              const cx = W * mag.x;
-              const cy = H * mag.y;
+              const cx = W * mag.x; const cy = H * mag.y;
               ctx.save();
               ctx.beginPath(); ctx.arc(cx, cy, magRadius, 0, Math.PI * 2);
               ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 15 * visualRatio; ctx.shadowOffsetY = 4 * visualRatio;
@@ -1144,13 +1034,12 @@ const app = {
               const sW = magDiameter / zoom; const sH = magDiameter / zoom;
               const sX = cx - sW / 2; const sY = cy - sH / 2;
               
-              // 在處理下載時，從虛擬的 Canvas 擷取畫面
               ctx.drawImage(cvs, sX, sY, sW, sH, cx - magRadius, cy - magRadius, magDiameter, magDiameter);
               ctx.restore(); 
           });
       }
       
-      document.body.removeChild(cvs); // 處理完畢移除
+      document.body.removeChild(cvs); 
       return cvs;
     },
     downloadSingle: () => {
